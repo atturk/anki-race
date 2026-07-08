@@ -1,38 +1,16 @@
 (function() {
-    // 1. Check if state exists
-    const state = window.ankiRaceState;
-    if (!state || !state.race_in_progress) {
-        // If race is not active, hide the container or don't render
-        const container = document.getElementById("anki-race-container");
-        if (container) container.style.display = "none";
-        return;
-    }
-
-    // 2. Fetch and render HTML
-    const container = document.getElementById("anki-race-container");
-    if (!container) return;
-
-    fetch("/_addons/anki_race/web/index.html")
-        .then(response => {
-            if (!response.ok) throw new Error("Could not load race HTML");
-            return response.text();
-        })
-        .then(html => {
-            container.innerHTML = html;
-            initializeRace(state);
-        })
-        .catch(err => {
-            console.error("AnkiRace Error:", err);
-        });
-
     let timerInterval = null;
+    let localState = null;
 
-    function initializeRace(state) {
+    // Define globally accessible API for Python to push updates
+    window.initializeRace = function(state) {
+        localState = state;
+
         // Set static properties
         document.getElementById("race-deck-name").innerText = state.deck_name || "Mazzo";
         document.getElementById("race-mode").innerText = state.mode.toUpperCase();
         
-        // Apply color code for modes
+        // Mode colors
         const modeBadge = document.getElementById("race-mode");
         if (state.mode === "fuga") {
             modeBadge.style.backgroundColor = "#e67e22";
@@ -40,30 +18,45 @@
             modeBadge.style.backgroundColor = "#e74c3c";
         }
 
-        // Set image sources
+        // Set image paths
         document.getElementById("car-user-img").src = state.user_car_url;
         document.getElementById("car-cpu-img").src = state.cpu_car_url;
 
-        // Set road background and animate it
+        // Animate road background texture scrolling
         const road = document.getElementById("race-road-strip");
         road.style.backgroundImage = `url('${state.road_texture_url}')`;
         road.classList.add("animating");
 
-        // Calculate completed cards text
-        const completed = state.total_cards - state.remaining_cards;
-        document.getElementById("race-progress").innerText = `${completed} / ${state.total_cards} CARTE`;
+        // Render card numbers
+        updateProgressDisplay(state);
 
-        // Update positions immediately
+        // Update wrappers
         updateCarPositions(state.user_position, state.cpu_position);
 
-        // Start live game loop (100ms ticks)
+        // Clear existing intervals
         if (timerInterval) clearInterval(timerInterval);
+        
+        // Start live rendering (100ms interval for CPU smooth animation and timer)
         timerInterval = setInterval(() => {
-            updateGameLoop(state);
+            updateGameTick();
         }, 100);
+    };
 
-        // Intercept key events when game over overlay is shown
-        window.addEventListener("keydown", blockAnkiKeys, true);
+    window.updateRaceState = function(state) {
+        if (!localState) return;
+        
+        // Update variables (position changes, card answered updates)
+        localState.user_position = state.user_position;
+        localState.remaining_cards = state.remaining_cards;
+        localState.total_cards = state.total_cards;
+
+        updateProgressDisplay(localState);
+        updateCarPositions(localState.user_position, localState.cpu_position);
+    };
+
+    function updateProgressDisplay(state) {
+        const completed = state.total_cards - state.remaining_cards;
+        document.getElementById("race-progress").innerText = `${completed} / ${state.total_cards} CARTE`;
     }
 
     function updateCarPositions(userPos, cpuPos) {
@@ -71,62 +64,61 @@
         const cpuWrapper = document.getElementById("car-cpu-wrapper");
         
         if (userWrapper && cpuWrapper) {
-            // Map 0-100% to track (leaves ~85% of road width to account for car width and finish line)
+            // Calc left positions (max 85% of track width to leave room for finish flag)
             userWrapper.style.left = `calc(${userPos}% * 0.85)`;
             cpuWrapper.style.left = `calc(${cpuPos}% * 0.85)`;
         }
     }
 
-    function updateGameLoop(state) {
-        if (!state.race_in_progress) return;
+    function updateGameTick() {
+        if (!localState || !localState.race_in_progress) return;
 
-        // Compute elapsed time
+        // Calculate elapsed time
         const now = Date.now() / 1000;
-        const elapsed = Math.max(0, now - state.start_time);
+        const elapsed = Math.max(0, now - localState.start_time);
         
-        // Format time display
+        // Display timer value
         const minutes = Math.floor(elapsed / 60);
         const seconds = Math.floor(elapsed % 60);
         const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
         const timeValElem = document.getElementById("race-time-value");
         if (timeValElem) timeValElem.innerText = timeStr;
 
-        // Compute CPU Position based on mode
+        // Calculate CPU Position dynamically
         let cpuPos = 0;
-        const totalSeconds = state.chosen_time * 60;
+        const totalSeconds = localState.chosen_time * 60;
         
-        if (state.mode === "fuga") {
-            // Fuga (Inseguimento): CPU starts at 0% (user has headstart e.g. based on card position or constant)
-            // CPU speeds up over time: acceleration formula
-            // position = 0.5 * accel * t^2
-            // We set acceleration so it catches user (starting at 35%) at totalSeconds if user doesn't advance
+        if (localState.mode === "fuga") {
+            // Inseguimento: CPU starts at 0% and speeds up over time (acceleration)
             const accel = 100.0 / (totalSeconds * totalSeconds);
-            cpuPos = Math.min(100.0, 0.5 * accel * elapsed * elapsed * 2); // multiplied by 2 for challenge
+            cpuPos = Math.min(100.0, 0.5 * accel * elapsed * elapsed * 2); // 2x multiplier for speed
         } else {
-            // Normale: CPU travels at constant speed to reach 100% at totalSeconds
+            // Standard: CPU speed is constant
             cpuPos = Math.min(100.0, (elapsed / totalSeconds) * 100.0);
         }
 
-        // User Position is static (calculated in Python per card)
-        const userPos = state.user_position;
+        localState.cpu_position = cpuPos;
 
         // Update positions visually
-        updateCarPositions(userPos, cpuPos);
+        updateCarPositions(localState.user_position, cpuPos);
 
-        // Check race finish conditions
-        checkRaceResult(state, userPos, cpuPos, elapsed, timeStr);
+        // Check for victory or game over
+        checkRaceEndConditions(elapsed, timeStr);
     }
 
-    function checkRaceResult(state, userPos, cpuPos, elapsed, timeStr) {
+    function checkRaceEndConditions(elapsed, timeStr) {
         const overlay = document.getElementById("race-finish-overlay");
-        if (!overlay || overlay.style.display !== "none") return; // already triggered
+        if (!overlay || overlay.style.display !== "none") return; // already finished
 
         let isGameOver = false;
         let isVictory = false;
         let msg = "";
 
-        if (state.mode === "fuga") {
-            // Fuga: User loses if CPU catches them (cpuPos >= userPos)
+        const userPos = localState.user_position;
+        const cpuPos = localState.cpu_position;
+
+        if (localState.mode === "fuga") {
             if (cpuPos >= userPos && userPos < 100.0) {
                 isGameOver = true;
                 isVictory = false;
@@ -137,7 +129,6 @@
                 msg = "Sei sfuggito all'inseguitore completando tutto il mazzo!";
             }
         } else {
-            // Normale: First to 100% wins
             if (userPos >= 100.0) {
                 isGameOver = true;
                 isVictory = true;
@@ -150,27 +141,28 @@
         }
 
         if (isGameOver) {
-            // Stop road animation
+            // Freeze road movement
             const road = document.getElementById("race-road-strip");
             if (road) road.classList.remove("animating");
 
-            // Stop game loop timer
+            // Stop update loop
             if (timerInterval) clearInterval(timerInterval);
+            localState.race_in_progress = false;
 
-            // Populate overlay metrics
+            // Display overlay stats
             document.getElementById("overlay-title").innerText = isVictory ? "VITTORIA!" : "GAME OVER";
             document.getElementById("overlay-title").style.color = isVictory ? "#2ecc71" : "#e74c3c";
             document.getElementById("overlay-icon").innerText = isVictory ? "🏆" : "💥";
             document.getElementById("stat-time").innerText = timeStr;
             
-            const completed = state.total_cards - state.remaining_cards;
-            document.getElementById("stat-cards").innerText = `${completed} / ${state.total_cards}`;
+            const completed = localState.total_cards - localState.remaining_cards;
+            document.getElementById("stat-cards").innerText = `${completed} / ${localState.total_cards}`;
             document.getElementById("overlay-message").innerText = msg;
 
-            // Trigger Python side to end the race status
+            // Notify Python that the game finished
             pycmd("anki_race_finished");
 
-            // Show overlay
+            // Display overlay
             overlay.style.display = "flex";
         }
     }
@@ -178,16 +170,24 @@
     function blockAnkiKeys(e) {
         const overlay = document.getElementById("race-finish-overlay");
         if (overlay && overlay.style.display !== "none") {
-            // Block event from reaching Anki keys (like Spacebar or 1-4 keys)
             e.stopPropagation();
             e.preventDefault();
         }
     }
 
-    // Global function to close overlay and clean event listeners
     window.closeRaceOverlay = function() {
         const overlay = document.getElementById("race-finish-overlay");
         if (overlay) overlay.style.display = "none";
+        
         window.removeEventListener("keydown", blockAnkiKeys, true);
+        
+        // Notify Python that the overlay is closed, so it can hide the bar
+        pycmd("anki_race_close_overlay");
     };
+
+    // Auto-launch trigger to request initial state from Python
+    setTimeout(() => {
+        pycmd("anki_race_get_initial_state");
+        window.addEventListener("keydown", blockAnkiKeys, true);
+    }, 50);
 })();

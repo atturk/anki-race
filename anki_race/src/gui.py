@@ -1,4 +1,8 @@
+import os
+import json
 from typing import Dict, Any, Optional
+from aqt import mw
+from aqt.webview import AnkiWebView
 from aqt.qt import (
     QDialog,
     QVBoxLayout,
@@ -7,8 +11,78 @@ from aqt.qt import (
     QSpinBox,
     QPushButton,
     QRadioButton,
-    Qt
+    Qt,
+    QUrl
 )
+from .race import race_manager
+
+addon_package = __name__.split('.')[0]
+
+def get_asset_url(filename: str) -> str:
+    """Checks if a custom asset exists in user_files/, else falls back to default in web/assets/."""
+    addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for ext in ["png", "jpg", "svg"]:
+        user_path = os.path.join(addon_dir, "user_files", f"{filename}.{ext}")
+        if os.path.exists(user_path):
+            return f"/_addons/{addon_package}/user_files/{filename}.{ext}"
+    return f"/_addons/{addon_package}/web/assets/{filename}.svg"
+
+class RaceBarWebView(AnkiWebView):
+    def __init__(self, parent: Any = None) -> None:
+        super().__init__(parent)
+        self.setFixedHeight(110) # Set height of the persistent race bar widget
+        self.set_bridge_command(self._handle_cmd, self)
+        
+    def load_race_html(self) -> None:
+        """Loads the HTML document of the race bar served by Anki's server."""
+        get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+        server_url = get_url() if get_url else "http://127.0.0.1/"
+        url = f"{server_url}_addons/{addon_package}/web/index.html"
+        self.load(QUrl(url))
+        
+    def update_state(self) -> None:
+        """Pushes the updated state variables to the JavaScript frontend."""
+        if not race_manager.race_in_progress:
+            return
+        state = self._get_state_dict()
+        self.eval(f"if (window.updateRaceState) {{ window.updateRaceState({json.dumps(state)}); }}")
+
+    def _get_state_dict(self) -> Dict[str, Any]:
+        """Collects the complete current state of the race manager."""
+        user_car_url = get_asset_url("car_user")
+        cpu_car_url = get_asset_url("car_cpu")
+        road_texture_url = get_asset_url("road_texture")
+        
+        current_deck_id = mw.col.decks.selected()
+        deck = mw.col.decks.get(current_deck_id)
+        deck_name = deck.get("name", "Mazzo")
+        
+        return {
+            "user_position": race_manager.user_position,
+            "cpu_position": race_manager.cpu_position,
+            "total_cards": race_manager.total_cards,
+            "remaining_cards": race_manager.remaining_cards,
+            "mode": race_manager.mode,
+            "chosen_time": race_manager.chosen_time,
+            "race_in_progress": race_manager.race_in_progress,
+            "start_time": race_manager.start_time,
+            "deck_name": deck_name,
+            "user_car_url": user_car_url,
+            "cpu_car_url": cpu_car_url,
+            "road_texture_url": road_texture_url
+        }
+
+    def _handle_cmd(self, cmd: str) -> Any:
+        """Handles bridge signals sent from JavaScript inside the race bar."""
+        if cmd == "anki_race_get_initial_state":
+            state = self._get_state_dict()
+            self.eval(f"if (window.initializeRace) {{ window.initializeRace({json.dumps(state)}); }}")
+        elif cmd == "anki_race_finished":
+            race_manager.race_in_progress = False
+        elif cmd == "anki_race_close_overlay":
+            self.hide()
+        return None
+
 
 class RaceSetupDialog(QDialog):
     def __init__(self, parent: Any, deck_name: str, due_cards: int) -> None:
@@ -76,7 +150,6 @@ class RaceSetupDialog(QDialog):
         self.start_btn = QPushButton("Gareggia!")
         self.start_btn.setDefault(True)
         self.start_btn.clicked.connect(self.accept)
-        # Apply standard Anki color (blue-ish) or race theme (red/green)
         self.start_btn.setStyleSheet("font-weight: bold;")
         
         btn_layout.addWidget(self.cancel_btn)

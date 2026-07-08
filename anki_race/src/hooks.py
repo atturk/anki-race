@@ -1,25 +1,23 @@
-import os
-from typing import Any
+from typing import Any, Optional
 from aqt import mw, gui_hooks
 from aqt.utils import showInfo
-from aqt.reviewer import Reviewer
 from .race import race_manager
-from .gui import RaceSetupDialog
+from .gui import RaceSetupDialog, RaceBarWebView
 
 addon_package = __name__.split('.')[0]
 
-def get_asset_url(filename: str) -> str:
-    """Checks if a custom asset exists in user_files/, else falls back to default in web/assets/."""
-    addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
-    # Try different extensions in user_files
-    for ext in ["png", "jpg", "svg"]:
-        user_path = os.path.join(addon_dir, "user_files", f"{filename}.{ext}")
-        if os.path.exists(user_path):
-            return f"/_addons/{addon_package}/user_files/{filename}.{ext}"
-            
-    # Fallback to default SVG in web assets
-    return f"/_addons/{addon_package}/web/assets/{filename}.svg"
+# Global reference to the persistent race bar widget
+race_bar_widget: Optional[RaceBarWebView] = None
+
+def init_race_bar() -> None:
+    """Instantiates the persistent race bar webview and inserts it at the top of Anki's window layout."""
+    global race_bar_widget
+    if not race_bar_widget and mw:
+        race_bar_widget = RaceBarWebView(mw)
+        # Index 0 places it at the absolute top, above deck list / reviewer contents
+        mw.mainLayout.insertWidget(0, race_bar_widget)
+        # Hidden by default, shown only during a race study session
+        race_bar_widget.hide()
 
 def start_race_flow(deck_id: int) -> None:
     """Helper to open the setup dialog, initialize the race, and start studying."""
@@ -41,6 +39,11 @@ def start_race_flow(deck_id: int) -> None:
         settings = dialog.get_settings()
         race_manager.start_race(deck_id, settings)
         
+        # Load assets and show the persistent race bar widget
+        if race_bar_widget:
+            race_bar_widget.load_race_html()
+            race_bar_widget.show()
+            
         # Start studying by changing main window state to review
         mw.moveToState("review")
 
@@ -109,7 +112,7 @@ def on_overview_will_render_content(overview: Any, content: Any) -> None:
 """
 
 def on_js_message(handled: tuple[bool, Any], message: str, context: Any) -> tuple[bool, Any]:
-    """Handles messages sent from JavaScript inside Anki webviews."""
+    """Handles messages sent from JavaScript inside Anki's standard webviews (Overview)."""
     if message == "anki_race_setup":
         if not mw or not mw.col:
             return (True, None)
@@ -118,61 +121,7 @@ def on_js_message(handled: tuple[bool, Any], message: str, context: Any) -> tupl
         start_race_flow(current_deck_id)
         return (True, None)
         
-    elif message == "anki_race_finished":
-        # Disable race in progress state when overlay is displayed
-        race_manager.race_in_progress = False
-        return (True, None)
-        
     return handled
-
-def on_webview_will_set_content(web_content: Any, context: Any) -> None:
-    """Injects the race interface container, state, and assets when the Reviewer webview loads."""
-    if not isinstance(context, Reviewer):
-        return
-        
-    # Check if a race is actually in progress
-    if not race_manager.race_in_progress:
-        return
-        
-    # Determine asset paths (allowing hot-swapping from user_files)
-    user_car_url = get_asset_url("car_user")
-    cpu_car_url = get_asset_url("car_cpu")
-    road_texture_url = get_asset_url("road_texture")
-    
-    # Get deck info
-    current_deck_id = mw.col.decks.selected()
-    deck = mw.col.decks.get(current_deck_id)
-    deck_name = deck.get("name", "Mazzo")
-    
-    # Register CSS and JS scripts
-    web_content.css.append(f"/_addons/{addon_package}/web/css/race.css")
-    web_content.js.append(f"/_addons/{addon_package}/web/js/race.js")
-    
-    # Inject race state inside <head>
-    web_content.head += f"""
-<script>
-window.ankiRaceState = {{
-    user_position: {race_manager.user_position},
-    cpu_position: {race_manager.cpu_position},
-    total_cards: {race_manager.total_cards},
-    remaining_cards: {race_manager.remaining_cards},
-    mode: "{race_manager.mode}",
-    chosen_time: {race_manager.chosen_time},
-    race_in_progress: {"true" if race_manager.race_in_progress else "false"},
-    start_time: {race_manager.start_time},
-    deck_name: "{deck_name}",
-    user_car_url: "{user_car_url}",
-    cpu_car_url: "{cpu_car_url}",
-    road_texture_url: "{road_texture_url}"
-}};
-</script>
-"""
-    
-    # Prepend the HTML container for the race bar at the top of <body>
-    web_content.body = f"""
-<div id="anki-race-container"></div>
-{web_content.body}
-"""
 
 def on_card_answered(reviewer: Any, card: Any, ease: int) -> None:
     """Updates the race state when a card is rated in the reviewer."""
@@ -181,10 +130,23 @@ def on_card_answered(reviewer: Any, card: Any, ease: int) -> None:
         correct = ease > 1
         race_manager.on_card_answered(correct)
         
+        # Push updated positions to our persistent top widget Webview
+        if race_bar_widget:
+            race_bar_widget.update_state()
+            
         # Print status to debug console for validation
         print(f"[AnkiRace] Card answered (correct={correct}). "
               f"Remaining cards: {race_manager.remaining_cards}/{race_manager.total_cards}. "
               f"Positions: User {race_manager.user_position:.1f}% vs CPU {race_manager.cpu_position:.1f}%")
+
+def on_state_did_change(new_state: str, old_state: str) -> None:
+    """Ensures that the persistent race bar widget is hidden when leaving the reviewer screen."""
+    if new_state != "review":
+        if race_bar_widget:
+            race_bar_widget.hide()
+        # Reset race status if the user aborted the session early
+        if race_manager.race_in_progress:
+            race_manager.race_in_progress = False
 
 # Setup Hooks
 if mw:
@@ -197,11 +159,14 @@ if mw:
     # 3. Overview screen content injection hook
     gui_hooks.overview_will_render_content.append(on_overview_will_render_content)
     
-    # 4. WebView JS message handler hook
+    # 4. WebView JS message handler hook (captures signals from Overview deck screen)
     gui_hooks.webview_did_receive_js_message.append(on_js_message)
     
-    # 5. Reviewer webview injection hook
-    gui_hooks.webview_will_set_content.append(on_webview_will_set_content)
-    
-    # 6. Reviewer answer hook
+    # 5. Reviewer answer hook
     gui_hooks.reviewer_did_answer_card.append(on_card_answered)
+    
+    # 6. State change hook to show/hide the persistent widget
+    gui_hooks.state_did_change.append(on_state_did_change)
+    
+    # 7. Initialize persistent race bar widget
+    init_race_bar()
