@@ -21,11 +21,14 @@ addon_package = __name__.split('.')[0]
 def get_asset_url(filename: str) -> str:
     """Checks if a custom asset exists in user_files/, else falls back to default in web/assets/."""
     addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+    server_url = get_url() if get_url else "http://127.0.0.1/"
+    
     for ext in ["png", "jpg", "svg"]:
         user_path = os.path.join(addon_dir, "user_files", f"{filename}.{ext}")
         if os.path.exists(user_path):
-            return f"/_addons/{addon_package}/user_files/{filename}.{ext}"
-    return f"/_addons/{addon_package}/web/assets/{filename}.svg"
+            return f"{server_url}_addons/{addon_package}/user_files/{filename}.{ext}"
+    return f"{server_url}_addons/{addon_package}/web/assets/{filename}.svg"
 
 class RaceBarWebView(AnkiWebView):
     def __init__(self, parent: Any = None) -> None:
@@ -34,13 +37,33 @@ class RaceBarWebView(AnkiWebView):
         self.set_bridge_command(self._handle_cmd, self)
         
     def load_race_html(self) -> None:
-        """Loads the HTML document of the race bar served by Anki's server."""
+        """Loads the HTML document of the race bar served by Anki's server, inlining CSS and JS to bypass Qt WebEngine blocks."""
         addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         html_path = os.path.join(addon_dir, "web", "index.html")
         
         try:
             with open(html_path, "r", encoding="utf-8") as f:
                 html_content = f.read()
+                
+            # Inline CSS
+            css_path = os.path.join(addon_dir, "web", "css", "race.css")
+            if os.path.exists(css_path):
+                with open(css_path, "r", encoding="utf-8") as f:
+                    css_data = f.read()
+                html_content = html_content.replace(
+                    '<link rel="stylesheet" href="css/race.css">',
+                    f"<style>{css_data}</style>"
+                )
+                
+            # Inline JS
+            js_path = os.path.join(addon_dir, "web", "js", "race.js")
+            if os.path.exists(js_path):
+                with open(js_path, "r", encoding="utf-8") as f:
+                    js_data = f.read()
+                html_content = html_content.replace(
+                    '<script src="js/race.js"></script>',
+                    f"<script>{js_data}</script>"
+                )
                 
             get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
             server_url = get_url() if get_url else "http://127.0.0.1/"
