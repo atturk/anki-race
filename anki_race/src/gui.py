@@ -35,10 +35,20 @@ class RaceBarWebView(AnkiWebView):
         
     def load_race_html(self) -> None:
         """Loads the HTML document of the race bar served by Anki's server."""
-        get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
-        server_url = get_url() if get_url else "http://127.0.0.1/"
-        url = f"{server_url}_addons/{addon_package}/web/index.html"
-        self.load(QUrl(url))
+        addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        html_path = os.path.join(addon_dir, "web", "index.html")
+        
+        try:
+            with open(html_path, "r", encoding="utf-8") as f:
+                html_content = f.read()
+                
+            get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+            server_url = get_url() if get_url else "http://127.0.0.1/"
+            base_url = f"{server_url}_addons/{addon_package}/web/"
+            
+            self.setHtml(html_content, QUrl(base_url))
+        except Exception as e:
+            print(f"[AnkiRace] Error loading HTML: {e}")
         
     def update_state(self) -> None:
         """Pushes the updated state variables to the JavaScript frontend."""

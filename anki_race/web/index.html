@@ -1,56 +1,67 @@
-<div class="anki-race-bar-inner">
-    <!-- HUD Dashboard -->
-    <div class="race-hud">
-        <div class="hud-left">
-            <span class="hud-badge" id="race-mode">NORMALE</span>
-            <span class="hud-label" id="race-deck-name">MAZZO</span>
-        </div>
-        <div class="hud-center">
-            <span class="hud-value" id="race-progress">0 / 0 CARTE</span>
-        </div>
-        <div class="hud-right">
-            <span class="hud-label" id="race-time-label">TEMPO:</span>
-            <span class="hud-value" id="race-time-value">00:00</span>
-        </div>
-    </div>
-    
-    <!-- Track and Cars -->
-    <div class="race-track-container">
-        <div class="race-road" id="race-road-strip">
-            <!-- Lanes and markings (CSS handled) -->
-            <div class="finish-line"></div>
-            
-            <!-- CPU Car -->
-            <div class="car-wrapper" id="car-cpu-wrapper" style="left: 0%;">
-                <img class="car-img" id="car-cpu-img" src="" alt="CPU" />
-                <span class="car-tag tag-cpu">CPU</span>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="css/race.css">
+</head>
+<body>
+    <div class="anki-race-bar-inner">
+        <!-- HUD Dashboard -->
+        <div class="race-hud">
+            <div class="hud-left">
+                <span class="hud-badge" id="race-mode">NORMALE</span>
+                <span class="hud-label" id="race-deck-name">MAZZO</span>
             </div>
-            
-            <!-- User Car -->
-            <div class="car-wrapper" id="car-user-wrapper" style="left: 0%;">
-                <img class="car-img" id="car-user-img" src="" alt="USER" />
-                <span class="car-tag tag-user">TU</span>
+            <div class="hud-center">
+                <span class="hud-value" id="race-progress">0 / 0 CARTE</span>
+            </div>
+            <div class="hud-right">
+                <span class="hud-label" id="race-time-label">TEMPO:</span>
+                <span class="hud-value" id="race-time-value">00:00</span>
             </div>
         </div>
+        
+        <!-- Track and Cars -->
+        <div class="race-track-container">
+            <div class="race-road" id="race-road-strip">
+                <!-- Lanes and markings (CSS handled) -->
+                <div class="finish-line"></div>
+                
+                <!-- CPU Car -->
+                <div class="car-wrapper" id="car-cpu-wrapper" style="left: 0%;">
+                    <img class="car-img" id="car-cpu-img" src="" alt="CPU" />
+                    <span class="car-tag tag-cpu">CPU</span>
+                </div>
+                
+                <!-- User Car -->
+                <div class="car-wrapper" id="car-user-wrapper" style="left: 0%;">
+                    <img class="car-img" id="car-user-img" src="" alt="USER" />
+                    <span class="car-tag tag-user">TU</span>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 
-<!-- Race Finish Overlay -->
-<div class="race-overlay" id="race-finish-overlay" style="display: none;">
-    <div class="overlay-card">
-        <div class="overlay-icon" id="overlay-icon">🏆</div>
-        <h2 class="overlay-title" id="overlay-title">GARA COMPLETATA</h2>
-        <div class="overlay-stats">
-            <div class="stat-item">
-                <span class="stat-lbl">Tempo Impiegato</span>
-                <span class="stat-val" id="stat-time">00:00</span>
+    <!-- Race Finish Overlay -->
+    <div class="race-overlay" id="race-finish-overlay" style="display: none;">
+        <div class="overlay-card">
+            <div class="overlay-icon" id="overlay-icon">🏆</div>
+            <h2 class="overlay-title" id="overlay-title">GARA COMPLETATA</h2>
+            <div class="overlay-stats">
+                <div class="stat-item">
+                    <span class="stat-lbl">Tempo Impiegato</span>
+                    <span class="stat-val" id="stat-time">00:00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-lbl">Carte Studiate</span>
+                    <span class="stat-val" id="stat-cards">0 / 0</span>
+                </div>
             </div>
-            <div class="stat-item">
-                <span class="stat-lbl">Carte Studiate</span>
-                <span class="stat-val" id="stat-cards">0 / 0</span>
-            </div>
+            <p class="overlay-message" id="overlay-message">Hai completato lo studio prima della CPU!</p>
+            <button class="overlay-btn" id="overlay-close-btn" onclick="closeRaceOverlay()">Continua</button>
         </div>
-        <p class="overlay-message" id="overlay-message">Hai completato lo studio prima della CPU!</p>
-        <button class="overlay-btn" id="overlay-close-btn" onclick="closeRaceOverlay()">Continua</button>
     </div>
-</div>
+
+    <script src="js/race.js"></script>
+</body>
+</html>
