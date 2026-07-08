@@ -9,6 +9,7 @@ from aqt.qt import (
     QHBoxLayout,
     QLabel,
     QSpinBox,
+    QComboBox,
     QPushButton,
     QRadioButton,
     Qt,
@@ -102,7 +103,8 @@ class RaceBarWebView(AnkiWebView):
             "deck_name": deck_name,
             "user_car_url": user_car_url,
             "cpu_car_url": cpu_car_url,
-            "road_texture_url": road_texture_url
+            "road_texture_url": road_texture_url,
+            "advantage": race_manager.advantage
         }
 
     def _handle_cmd(self, cmd: str) -> Any:
@@ -138,7 +140,7 @@ class RaceSetupDialog(QDialog):
         info_label.setStyleSheet("font-size: 13px; line-height: 1.4;")
         layout.addWidget(info_label)
         
-        # Divider/Border (styled via stylesheet)
+        # Divider/Border
         line = QLabel()
         line.setStyleSheet("border-bottom: 1px solid #ccc; max-height: 1px;")
         layout.addWidget(line)
@@ -155,8 +157,23 @@ class RaceSetupDialog(QDialog):
         layout.addWidget(self.btn_normal)
         
         self.btn_escape = QRadioButton("Modalità Fuga (Inseguimento)")
-        self.btn_escape.setToolTip("La CPU ti insegue e accelera col tempo. Fuggila rispondendo correttamente!")
+        self.btn_escape.setToolTip("La CPU ti insegue. Fuggila completando tutto il mazzo prima di essere raggiunto!")
         layout.addWidget(self.btn_escape)
+        
+        # Connect mode change to toggle advantage setting
+        self.btn_escape.toggled.connect(self.on_mode_toggled)
+        
+        # Advantage Selection
+        self.advantage_layout = QHBoxLayout()
+        self.advantage_label = QLabel("<b>Vantaggio Iniziale:</b>")
+        self.advantage_label.setStyleSheet("font-size: 12px; color: #555;")
+        self.advantage_combo = QComboBox()
+        self.advantage_combo.addItems(["10%", "20%", "30%"])
+        self.advantage_combo.setCurrentIndex(2) # Default 30%
+        self.advantage_combo.setEnabled(False) # Only active in Escape mode
+        self.advantage_layout.addWidget(self.advantage_label)
+        self.advantage_layout.addWidget(self.advantage_combo)
+        layout.addLayout(self.advantage_layout)
         
         # Time Selection Header
         time_header = QLabel("<b>Durata Gara (Tempo limite CPU):</b>")
@@ -189,11 +206,23 @@ class RaceSetupDialog(QDialog):
         btn_layout.addWidget(self.start_btn)
         layout.addLayout(btn_layout)
 
+    def on_mode_toggled(self, checked: bool) -> None:
+        """Enables advantage setting if Escape mode is selected, else disables it."""
+        self.advantage_combo.setEnabled(checked)
+        color = "#000" if checked else "#555"
+        self.advantage_label.setStyleSheet(f"font-size: 12px; color: {color};")
+
     def get_settings(self) -> Dict[str, Any]:
         """Returns the settings selected by the user."""
         mode = "normale" if self.btn_normal.isChecked() else "fuga"
         chosen_time = float(self.time_spin.value())
+        
+        # Convert e.g., "30%" to 30.0
+        advantage_str = self.advantage_combo.currentText().replace("%", "")
+        advantage = float(advantage_str) if mode == "fuga" else 0.0
+        
         return {
             "mode": mode,
-            "chosen_time": chosen_time
+            "chosen_time": chosen_time,
+            "advantage": advantage
         }

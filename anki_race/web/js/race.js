@@ -90,18 +90,9 @@
         const timeValElem = document.getElementById("race-time-value");
         if (timeValElem) timeValElem.innerText = timeStr;
 
-        // Calculate CPU Position dynamically
-        let cpuPos = 0;
+        // Calculate CPU Position dynamically (constant speed to reach 100% in chosen_time)
         const totalSeconds = localState.chosen_time * 60;
-        
-        if (localState.mode === "fuga") {
-            // Inseguimento: CPU starts at 0% and speeds up over time (acceleration)
-            const accel = 100.0 / (totalSeconds * totalSeconds);
-            cpuPos = Math.min(100.0, 0.5 * accel * elapsed * elapsed * 2); // 2x multiplier for speed
-        } else {
-            // Standard: CPU speed is constant
-            cpuPos = Math.min(100.0, (elapsed / totalSeconds) * 100.0);
-        }
+        const cpuPos = Math.min(100.0, (elapsed / totalSeconds) * 100.0);
 
         localState.cpu_position = cpuPos;
 
