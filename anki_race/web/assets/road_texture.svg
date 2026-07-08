@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 40" width="100" height="40">
+  <!-- Asphalt background -->
+  <rect width="100" height="40" fill="#2c3e50" />
+  <!-- Top and Bottom white lanes -->
+  <rect y="0" width="100" height="3" fill="#ecf0f1" />
+  <rect y="37" width="100" height="3" fill="#ecf0f1" />
+  <!-- Center dashed line -->
+  <line x1="10" y1="20" x2="40" y2="20" stroke="#f1c40f" stroke-width="2" />
+  <line x1="60" y1="20" x2="90" y2="20" stroke="#f1c40f" stroke-width="2" />
+</svg>

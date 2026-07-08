@@ -25,29 +25,43 @@ class AnkiRaceManager:
         self.total_cards = self._get_due_card_count(deck_id)
         self.remaining_cards = self.total_cards
         
-        # Reset positions
-        self.user_position = 0.0
-        self.cpu_position = 0.0
+        # Reset positions (Fuga mode has a 35% user headstart)
+        if self.mode == "fuga":
+            self.user_position = 35.0
+            self.cpu_position = 0.0
+        else:
+            self.user_position = 0.0
+            self.cpu_position = 0.0
+            
         self.start_time = time.time()
         self.race_in_progress = True
 
     def calculate_positions(self) -> None:
-        """Calculates user and CPU positions."""
+        """Calculates user and CPU positions based on game mode and elapsed time."""
         if not self.race_in_progress:
             return
 
-        # 1. Calculate user position (0-100%)
-        if self.total_cards > 0:
-            completed = self.total_cards - self.remaining_cards
-            self.user_position = min(100.0, (completed / self.total_cards) * 100.0)
-        else:
-            self.user_position = 100.0
+        # 1. User position for normal mode (based on completed cards)
+        # Fuga mode user position is updated incrementally on correct answers in on_card_answered
+        if self.mode != "fuga":
+            if self.total_cards > 0:
+                completed = self.total_cards - self.remaining_cards
+                self.user_position = min(100.0, (completed / self.total_cards) * 100.0)
+            else:
+                self.user_position = 100.0
 
-        # 2. Calculate CPU position based on constant speed over time
+        # 2. CPU position based on constant speed or acceleration
         elapsed_seconds = time.time() - self.start_time
         total_seconds = self.chosen_time * 60.0
+        
         if total_seconds > 0:
-            self.cpu_position = min(100.0, (elapsed_seconds / total_seconds) * 100.0)
+            if self.mode == "fuga":
+                # In fuga mode, CPU starts at 0% and accelerates over time (2x multiplier for challenge)
+                accel = 100.0 / (total_seconds * total_seconds)
+                self.cpu_position = min(100.0, 0.5 * accel * elapsed_seconds * elapsed_seconds * 2)
+            else:
+                # Normal mode: constant speed
+                self.cpu_position = min(100.0, (elapsed_seconds / total_seconds) * 100.0)
         else:
             self.cpu_position = 100.0
 
@@ -59,6 +73,13 @@ class AnkiRaceManager:
         if self.remaining_cards > 0:
             self.remaining_cards -= 1
         
+        if self.mode == "fuga":
+            if correct:
+                # User advances 65% remaining track split by total cards
+                step = 65.0 / self.total_cards if self.total_cards > 0 else 0.0
+                self.user_position = min(100.0, self.user_position + step)
+            # If incorrect, user position doesn't advance (CPU catches up)
+            
         self.calculate_positions()
 
     def _get_due_card_count(self, deck_id: int) -> int:
