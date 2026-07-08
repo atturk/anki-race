@@ -33,7 +33,7 @@ def get_asset_url(filename: str) -> str:
 class RaceBarWebView(AnkiWebView):
     def __init__(self, parent: Any = None) -> None:
         super().__init__(parent)
-        self.setFixedHeight(110) # Set height of the persistent race bar widget
+        self.setFixedHeight(72) # Set height of the persistent race bar widget (matches road height)
         self.set_bridge_command(self._handle_cmd, self)
         
     def load_race_html(self) -> None:

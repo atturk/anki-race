@@ -7,15 +7,17 @@
         localState = state;
 
         // Set static properties
-        document.getElementById("race-deck-name").innerText = state.deck_name || "Mazzo";
-        document.getElementById("race-mode").innerText = state.mode.toUpperCase();
+        const deckElem = document.getElementById("race-deck-name");
+        if (deckElem) deckElem.innerText = state.deck_name || "Mazzo";
         
-        // Mode colors
         const modeBadge = document.getElementById("race-mode");
-        if (state.mode === "fuga") {
-            modeBadge.style.backgroundColor = "#e67e22";
-        } else {
-            modeBadge.style.backgroundColor = "#e74c3c";
+        if (modeBadge) {
+            modeBadge.innerText = state.mode.toUpperCase();
+            if (state.mode === "fuga") {
+                modeBadge.style.backgroundColor = "#e67e22";
+            } else {
+                modeBadge.style.backgroundColor = "#e74c3c";
+            }
         }
 
         // Set image paths
@@ -56,7 +58,10 @@
 
     function updateProgressDisplay(state) {
         const completed = state.total_cards - state.remaining_cards;
-        document.getElementById("race-progress").innerText = `${completed} / ${state.total_cards} CARTE`;
+        const progressElem = document.getElementById("race-progress");
+        if (progressElem) {
+            progressElem.innerText = `${completed} / ${state.total_cards} CARTE`;
+        }
     }
 
     function updateCarPositions(userPos, cpuPos) {
