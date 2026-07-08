@@ -130,6 +130,12 @@ def on_card_answered(reviewer: Any, card: Any, ease: int) -> None:
         correct = ease > 1
         race_manager.on_card_answered(correct)
         
+        # Check if victory achieved directly in Python to prevent timing conflicts
+        if race_manager.remaining_cards <= 0:
+            if race_bar_widget:
+                race_bar_widget.trigger_victory_directly()
+            return
+        
         # Push updated positions to our persistent top widget Webview
         if race_bar_widget:
             race_bar_widget.update_state()
@@ -157,6 +163,10 @@ def on_state_did_change(new_state: str, old_state: str) -> None:
                 if race_bar_widget:
                     race_bar_widget.hide()
     else: # new_state != "review"
+        # Safety check: if victory confetti animation is playing, do NOT hide or pause
+        if race_bar_widget and mw and race_bar_widget.height() == mw.rect().height():
+            return
+            
         if race_bar_widget:
             race_bar_widget.hide()
         if race_manager.race_in_progress and not race_manager.race_paused:

@@ -120,17 +120,11 @@ class RaceBarWebView(AnkiWebView):
             self.eval(f"if (window.initializeRace) {{ window.initializeRace({json.dumps(state)}); }}")
         elif cmd.startswith("anki_race_finished:"):
             result = cmd.split(":")[1]
-            race_manager.race_in_progress = False
-            race_manager.race_paused = False
-            
             if result == "victory":
-                # Temporarily make the widget fullscreen to display confetti overlay
-                if mw:
-                    self.setFixedHeight(mw.rect().height())
-                self.eval("if (window.playVictoryConfetti) { window.playVictoryConfetti(); }")
-                # Show native popup after confetti animation plays for 2.5s
-                QTimer.singleShot(2500, self.show_victory_popup)
+                self.trigger_victory_directly()
             else:
+                race_manager.race_in_progress = False
+                race_manager.race_paused = False
                 self.hide() # Close the bar immediately
                 # Show defeat popup (use singleShot to prevent web engine deadlock)
                 QTimer.singleShot(100, self.show_defeat_popup)
@@ -142,6 +136,17 @@ class RaceBarWebView(AnkiWebView):
             else:
                 self.setFixedHeight(88) # Expand to full height (road + tab)
         return None
+
+    def trigger_victory_directly(self) -> None:
+        """Triggers victory confetti and popup directly from Python to prevent timing conflicts."""
+        if not race_manager.race_in_progress:
+            return
+        race_manager.race_in_progress = False
+        race_manager.race_paused = False
+        if mw:
+            self.setFixedHeight(mw.rect().height())
+        self.eval("if (window.playVictoryConfetti) { window.playVictoryConfetti(); }")
+        QTimer.singleShot(2500, self.show_victory_popup)
 
     def show_victory_popup(self) -> None:
         """Displays the native Qt Victory dialog popup and resets widget layouts."""

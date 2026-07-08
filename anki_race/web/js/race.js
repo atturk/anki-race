@@ -104,8 +104,7 @@
     }
 
     function checkRaceEndConditions(elapsed, timeStr) {
-        const overlay = document.getElementById("race-finish-overlay");
-        if (!overlay || overlay.style.display !== "none") return; // already finished
+        if (!localState || !localState.race_in_progress) return;
 
         let isGameOver = false;
         let isVictory = false;
