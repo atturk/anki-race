@@ -146,6 +146,58 @@
         }
     }
 
+    window.playVictoryConfetti = function() {
+        document.body.classList.add("victory-screen");
+        
+        const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#e67e22'];
+        const container = document.body;
+        
+        function createParticleGroup(x, y, angle, spread) {
+            for (let i = 0; i < 40; i++) {
+                const p = document.createElement('div');
+                p.className = 'confetti-particle';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                
+                const a = angle + (Math.random() - 0.5) * spread;
+                const speed = 12 + Math.random() * 20;
+                p.vx = Math.cos(a) * speed;
+                p.vy = Math.sin(a) * speed - 6;
+                p.gravity = 0.4;
+                p.rotation = Math.random() * 360;
+                p.rotSpeed = (Math.random() - 0.5) * 12;
+                
+                container.appendChild(p);
+                
+                let ticks = 0;
+                const interval = setInterval(() => {
+                    p.vx *= 0.97;
+                    p.vy += p.gravity;
+                    p.style.left = (parseFloat(p.style.left) + p.vx) + 'px';
+                    p.style.top = (parseFloat(p.style.top) + p.vy) + 'px';
+                    p.rotation += p.rotSpeed;
+                    p.style.transform = `rotate(${p.rotation}deg)`;
+                    
+                    ticks++;
+                    if (ticks > 120 || parseFloat(p.style.top) > window.innerHeight) {
+                        clearInterval(interval);
+                        p.remove();
+                    }
+                }, 16);
+            }
+        }
+        
+        // Shoot from left and right corners
+        createParticleGroup(0, window.innerHeight, -Math.PI / 4, Math.PI / 6);
+        createParticleGroup(window.innerWidth, window.innerHeight, -3 * Math.PI / 4, Math.PI / 6);
+        
+        setTimeout(() => {
+            createParticleGroup(0, window.innerHeight, -Math.PI / 4, Math.PI / 6);
+            createParticleGroup(window.innerWidth, window.innerHeight, -3 * Math.PI / 4, Math.PI / 6);
+        }, 500);
+    };
+
     // Auto-launch trigger to request initial state from Python
     setTimeout(() => {
         pycmd("anki_race_get_initial_state");

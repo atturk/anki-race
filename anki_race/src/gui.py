@@ -13,7 +13,9 @@ from aqt.qt import (
     QPushButton,
     QRadioButton,
     Qt,
-    QUrl
+    QUrl,
+    QTimer,
+    QColor
 )
 from .race import race_manager
 
@@ -36,6 +38,10 @@ class RaceBarWebView(AnkiWebView):
         super().__init__(parent)
         self.setFixedHeight(88) # Set height of the persistent race bar widget (70px road + 18px tab)
         self.set_bridge_command(self._handle_cmd, self)
+        
+        # Enable transparent background to allow confetti overlays to draw above reviewer content
+        self.setStyleSheet("background: transparent;")
+        self.page().setBackgroundColor(QColor(0, 0, 0, 0))
         
     def load_race_html(self) -> None:
         """Loads the HTML document of the race bar served by Anki's server, inlining CSS and JS to bypass Qt WebEngine blocks."""
@@ -116,20 +122,19 @@ class RaceBarWebView(AnkiWebView):
             result = cmd.split(":")[1]
             race_manager.race_in_progress = False
             race_manager.race_paused = False
-            self.hide() # Close the bar immediately
             
-            # Show a native popup dialog
-            from aqt.utils import showInfo
             if result == "victory":
-                if race_manager.mode == "fuga":
-                    showInfo("🏆 Vittoria!\n\nSei sfuggito all'inseguitore completando tutto il mazzo!", title="Anki Race")
-                else:
-                    showInfo("🏆 Vittoria!\n\nHai battuto la CPU tagliando il traguardo per primo!", title="Anki Race")
+                # Temporarily make the widget fullscreen to display confetti overlay
+                if mw:
+                    self.setFixedHeight(mw.rect().height())
+                self.eval("if (window.playVictoryConfetti) { window.playVictoryConfetti(); }")
+                # Show native popup after confetti animation plays for 2.5s
+                QTimer.singleShot(2500, self.show_victory_popup)
             else:
-                if race_manager.mode == "fuga":
-                    showInfo("💥 Game Over!\n\nL'inseguitore ti ha raggiunto! Fai più in fretta la prossima volta!", title="Anki Race")
-                else:
-                    showInfo("💥 Game Over!\n\nLa CPU ha tagliato il traguardo prima di te. Riprova!", title="Anki Race")
+                self.hide() # Close the bar immediately
+                # Show defeat popup (use singleShot to prevent web engine deadlock)
+                QTimer.singleShot(100, self.show_defeat_popup)
+                
         elif cmd.startswith("anki_race_toggle_minimize:"):
             is_minimized = cmd.split(":")[1] == "true"
             if is_minimized:
@@ -137,6 +142,26 @@ class RaceBarWebView(AnkiWebView):
             else:
                 self.setFixedHeight(88) # Expand to full height (road + tab)
         return None
+
+    def show_victory_popup(self) -> None:
+        """Displays the native Qt Victory dialog popup and resets widget layouts."""
+        from aqt.utils import showInfo
+        title = "Anki Race"
+        if race_manager.mode == "fuga":
+            showInfo("🏆 Vittoria!\n\nSei sfuggito all'inseguitore completando tutto il mazzo!", title=title)
+        else:
+            showInfo("🏆 Vittoria!\n\nHai battuto la CPU tagliando il traguardo per primo!", title=title)
+        self.hide()
+        self.setFixedHeight(88) # Reset height to standard
+
+    def show_defeat_popup(self) -> None:
+        """Displays the native Qt Defeat dialog popup."""
+        from aqt.utils import showInfo
+        title = "Anki Race"
+        if race_manager.mode == "fuga":
+            showInfo("💥 Game Over!\n\nL'inseguitore ti ha raggiunto! Fai più in fretta la prossima volta!", title=title)
+        else:
+            showInfo("💥 Game Over!\n\nLa CPU ha tagliato il traguardo prima di te. Riprova!", title=title)
 
 
 class RaceSetupDialog(QDialog):
