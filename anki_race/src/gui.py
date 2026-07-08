@@ -146,10 +146,10 @@ class RaceBarWebView(AnkiWebView):
         self.hide() # Close the top bar immediately so it stops shifting layout
         self.setFixedHeight(88) # Reset height to standard
         
-        # Wait 300ms for Anki's main WebView to load the congratulations/overview screen, then shoot confetti
-        QTimer.singleShot(300, self.inject_confetti_into_main_webview)
-        # Show native popup after confetti animation plays for 2.5s
-        QTimer.singleShot(2500, self.show_victory_popup)
+        # Inject confetti into Anki's main WebView immediately (0ms delay)
+        QTimer.singleShot(0, self.inject_confetti_into_main_webview)
+        # Show native popup immediately (50ms delay to ensure the confetti JS executes first)
+        QTimer.singleShot(50, self.show_victory_popup)
 
     def inject_confetti_into_main_webview(self) -> None:
         """Injects CSS/JS confetti directly into Anki's main webview to celebrate victory."""
