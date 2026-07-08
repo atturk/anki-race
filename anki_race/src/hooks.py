@@ -1,5 +1,6 @@
 from typing import Any, Optional
 from aqt import mw, gui_hooks
+from aqt.qt import QMenu
 from aqt.utils import showInfo
 from .race import race_manager
 from .gui import RaceSetupDialog, RaceBarWebView
@@ -56,6 +57,9 @@ def on_menu_action() -> None:
 
 def on_overview_will_render_content(overview: Any, content: Any) -> None:
     """Injects a 'Gareggia' button into the deck overview screen beneath the 'Study Now' button."""
+    from .config import race_config
+    if not race_config.get("show_overview_button", True):
+        return
     # We append custom styles and a script to content.table
     content.table += """
 <style>
@@ -168,13 +172,37 @@ def on_state_did_change(new_state: str, old_state: str) -> None:
         if race_manager.race_in_progress and not race_manager.race_paused:
             race_manager.pause_race()
 
+def setup_tools_menu() -> None:
+    """Creates a sub-menu under Tools -> Anki Race with 'Inizia Gara' and 'Personalizza' options."""
+    if not mw:
+        return
+    
+    # Create the sub-menu under tools
+    menu = QMenu("Anki Race", mw.form.menuTools)
+    
+    # Add actions
+    action_start = menu.addAction("Inizia Gara")
+    action_start.triggered.connect(on_menu_action)
+    
+    action_config = menu.addAction("Personalizza...")
+    action_config.triggered.connect(on_open_config)
+    
+    # Add to Tools menu
+    mw.form.menuTools.addMenu(menu)
+
+def on_open_config() -> None:
+    """Opens the custom configuration dialog."""
+    from .config_dialog import RaceConfigDialog
+    dialog = RaceConfigDialog(mw)
+    dialog.exec()
+
 # Setup Hooks
 if mw:
     # 1. Register Web Exports so Anki's local web server serves files under /_addons/
     mw.addonManager.setWebExports(addon_package, r"(web|user_files)/.*")
     
-    # 2. Tools Menu Item
-    mw.form.menuTools.addAction("Test Anki Race", on_menu_action)
+    # 2. Tools Sub-menu
+    setup_tools_menu()
     
     # 3. Overview screen content injection hook
     gui_hooks.overview_will_render_content.append(on_overview_will_render_content)

@@ -1,0 +1,18 @@
+{
+    "road_scrolling": true,
+    "show_overview_button": true,
+    "default_mode": "normale",
+    "default_time": 5.0,
+    "default_advantage": 30.0,
+    "road_height": 70,
+    "car_cpu_offset_y": 6,
+    "car_user_offset_y": 36,
+    "car_cpu_type": "emoji",
+    "car_cpu_emoji": "🚓",
+    "car_cpu_flip": true,
+    "car_cpu_file": "",
+    "car_user_type": "emoji",
+    "car_user_emoji": "🏎️",
+    "car_user_flip": false,
+    "car_user_file": ""
+}

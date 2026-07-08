@@ -2,6 +2,65 @@
     let timerInterval = null;
     let localState = null;
 
+    function renderCustomizations(state) {
+        // 1. Road scrolling
+        const road = document.getElementById("race-road-strip");
+        if (road) {
+            if (state.road_scrolling !== false) {
+                road.classList.add("animating");
+            } else {
+                road.classList.remove("animating");
+            }
+            
+            // 2. Road height
+            road.style.height = `${state.road_height}px`;
+            const track = document.querySelector(".race-track-container");
+            if (track) track.style.height = `${state.road_height + 2}px`;
+        }
+
+        // 3. Car offsets and flips
+        const cpuWrapper = document.getElementById("car-cpu-wrapper");
+        const userWrapper = document.getElementById("car-user-wrapper");
+        if (cpuWrapper) {
+            cpuWrapper.style.top = `${state.car_cpu_offset_y}px`;
+            cpuWrapper.style.transform = state.car_cpu_flip ? 'scaleX(-1)' : 'none';
+        }
+        if (userWrapper) {
+            userWrapper.style.top = `${state.car_user_offset_y}px`;
+            userWrapper.style.transform = state.car_user_flip ? 'scaleX(-1)' : 'none';
+        }
+
+        // 4. CPU Car Type rendering
+        const cpuImg = document.getElementById("car-cpu-img");
+        const cpuEmoji = document.getElementById("car-cpu-emoji");
+        if (cpuImg && cpuEmoji) {
+            if (state.car_cpu_type === "emoji") {
+                cpuImg.style.display = "none";
+                cpuEmoji.style.display = "inline-block";
+                cpuEmoji.innerText = state.car_cpu_emoji || "🚓";
+            } else {
+                cpuEmoji.style.display = "none";
+                cpuImg.style.display = "inline-block";
+                cpuImg.src = state.cpu_car_url;
+            }
+        }
+
+        // 5. User Car Type rendering
+        const userImg = document.getElementById("car-user-img");
+        const userEmoji = document.getElementById("car-user-emoji");
+        if (userImg && userEmoji) {
+            if (state.car_user_type === "emoji") {
+                userImg.style.display = "none";
+                userEmoji.style.display = "inline-block";
+                userEmoji.innerText = state.car_user_emoji || "🏎️";
+            } else {
+                userEmoji.style.display = "none";
+                userImg.style.display = "inline-block";
+                userImg.src = state.user_car_url;
+            }
+        }
+    }
+
     // Define globally accessible API for Python to push updates
     window.initializeRace = function(state) {
         localState = state;
@@ -20,14 +79,11 @@
             }
         }
 
-        // Set image paths
-        document.getElementById("car-user-img").src = state.user_car_url;
-        document.getElementById("car-cpu-img").src = state.cpu_car_url;
-
-        // Animate road background texture scrolling
+        // Set background road image
         const road = document.getElementById("race-road-strip");
-        road.style.backgroundImage = `url('${state.road_texture_url}')`;
-        road.classList.add("animating");
+        if (road) road.style.backgroundImage = `url('${state.road_texture_url}')`;
+
+        renderCustomizations(state);
 
         // Render card numbers
         updateProgressDisplay(state);
@@ -45,13 +101,31 @@
     };
 
     window.updateRaceState = function(state) {
-        if (!localState) return;
-        
-        // Update variables (position changes, card answered updates)
-        localState.user_position = state.user_position;
-        localState.remaining_cards = state.remaining_cards;
-        localState.total_cards = state.total_cards;
+        if (!localState) {
+            localState = state;
+        } else {
+            // Update variables (position changes, card answered updates)
+            localState.user_position = state.user_position;
+            localState.remaining_cards = state.remaining_cards;
+            localState.total_cards = state.total_cards;
+            localState.cpu_position = state.cpu_position;
+            
+            // Sync configurations
+            localState.road_scrolling = state.road_scrolling;
+            localState.road_height = state.road_height;
+            localState.car_cpu_offset_y = state.car_cpu_offset_y;
+            localState.car_user_offset_y = state.car_user_offset_y;
+            localState.car_cpu_type = state.car_cpu_type;
+            localState.car_cpu_emoji = state.car_cpu_emoji;
+            localState.car_cpu_flip = state.car_cpu_flip;
+            localState.car_user_type = state.car_user_type;
+            localState.car_user_emoji = state.car_user_emoji;
+            localState.car_user_flip = state.car_user_flip;
+            localState.user_car_url = state.user_car_url;
+            localState.cpu_car_url = state.cpu_car_url;
+        }
 
+        renderCustomizations(localState);
         updateProgressDisplay(localState);
         updateCarPositions(localState.user_position, localState.cpu_position);
     };

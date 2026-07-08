@@ -36,7 +36,8 @@ def get_asset_url(filename: str) -> str:
 class RaceBarWebView(AnkiWebView):
     def __init__(self, parent: Any = None) -> None:
         super().__init__(parent)
-        self.setFixedHeight(88) # Set height of the persistent race bar widget (70px road + 18px tab)
+        from .config import race_config
+        self.setFixedHeight(race_config.get("road_height", 70) + 18)
         self.set_bridge_command(self._handle_cmd, self)
         
         # Enable transparent background to allow confetti overlays to draw above reviewer content
@@ -93,9 +94,35 @@ class RaceBarWebView(AnkiWebView):
         cpu_car_url = get_asset_url("car_cpu")
         road_texture_url = get_asset_url("road_texture")
         
-        current_deck_id = mw.col.decks.selected()
-        deck = mw.col.decks.get(current_deck_id)
-        deck_name = deck.get("name", "Mazzo")
+        current_deck_id = mw.col.decks.selected() if mw and mw.col else 1
+        deck_name = "Mazzo"
+        if mw and mw.col:
+            try:
+                deck = mw.col.decks.get(current_deck_id)
+                deck_name = deck.get("name", "Mazzo")
+            except:
+                pass
+        
+        from .config import race_config
+        
+        # Override file URLs if custom file is selected
+        cpu_file_name = race_config.get("car_cpu_file", "")
+        if cpu_file_name:
+            addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            user_path = os.path.join(addon_dir, "user_files", cpu_file_name)
+            if os.path.exists(user_path):
+                get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+                server_url = get_url() if get_url else "http://127.0.0.1/"
+                cpu_car_url = f"{server_url}_addons/{addon_package}/user_files/{cpu_file_name}"
+                
+        user_file_name = race_config.get("car_user_file", "")
+        if user_file_name:
+            addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            user_path = os.path.join(addon_dir, "user_files", user_file_name)
+            if os.path.exists(user_path):
+                get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+                server_url = get_url() if get_url else "http://127.0.0.1/"
+                user_car_url = f"{server_url}_addons/{addon_package}/user_files/{user_file_name}"
         
         return {
             "user_position": race_manager.user_position,
@@ -110,7 +137,19 @@ class RaceBarWebView(AnkiWebView):
             "user_car_url": user_car_url,
             "cpu_car_url": cpu_car_url,
             "road_texture_url": road_texture_url,
-            "advantage": race_manager.advantage
+            "advantage": race_manager.advantage,
+            
+            # Configurations
+            "road_scrolling": race_config.get("road_scrolling", True),
+            "road_height": race_config.get("road_height", 70),
+            "car_cpu_offset_y": race_config.get("car_cpu_offset_y", 6),
+            "car_user_offset_y": race_config.get("car_user_offset_y", 36),
+            "car_cpu_type": race_config.get("car_cpu_type", "emoji"),
+            "car_cpu_emoji": race_config.get("car_cpu_emoji", "🚓"),
+            "car_cpu_flip": race_config.get("car_cpu_flip", True),
+            "car_user_type": race_config.get("car_user_type", "emoji"),
+            "car_user_emoji": race_config.get("car_user_emoji", "🏎️"),
+            "car_user_flip": race_config.get("car_user_flip", False)
         }
 
     def _handle_cmd(self, cmd: str) -> Any:
@@ -134,7 +173,8 @@ class RaceBarWebView(AnkiWebView):
             if is_minimized:
                 self.setFixedHeight(18) # Collapse to show only the minimize tab
             else:
-                self.setFixedHeight(88) # Expand to full height (road + tab)
+                from .config import race_config
+                self.setFixedHeight(race_config.get("road_height", 70) + 18)
         return None
 
     def trigger_victory_directly(self) -> None:
@@ -144,7 +184,8 @@ class RaceBarWebView(AnkiWebView):
         race_manager.race_in_progress = False
         race_manager.race_paused = False
         self.hide() # Close the top bar immediately so it stops shifting layout
-        self.setFixedHeight(88) # Reset height to standard
+        from .config import race_config
+        self.setFixedHeight(race_config.get("road_height", 70) + 18) # Reset height to standard
         
         # Inject confetti into Anki's main WebView immediately (0ms delay)
         QTimer.singleShot(0, self.inject_confetti_into_main_webview)
@@ -274,7 +315,8 @@ class RaceBarWebView(AnkiWebView):
         else:
             showInfo("🏆 Vittoria!\n\nHai battuto la CPU tagliando il traguardo per primo!", title=title)
         self.hide()
-        self.setFixedHeight(88) # Reset height to standard
+        from .config import race_config
+        self.setFixedHeight(race_config.get("road_height", 70) + 18) # Reset height to standard
 
     def show_defeat_popup(self) -> None:
         """Displays the native Qt Defeat dialog popup."""
@@ -318,8 +360,11 @@ class RaceSetupDialog(QDialog):
         layout.addWidget(mode_header)
         
         # Mode Radio Buttons
+        # Mode Radio Buttons
+        from .config import race_config
+        default_mode = race_config.get("default_mode", "normale")
+        
         self.btn_normal = QRadioButton("Modalità Normale (Gara Standard)")
-        self.btn_normal.setChecked(True)
         self.btn_normal.setToolTip("La CPU avanza a velocità costante. Finisci il mazzo prima di essere battuto.")
         layout.addWidget(self.btn_normal)
         
@@ -327,6 +372,11 @@ class RaceSetupDialog(QDialog):
         self.btn_escape.setToolTip("La CPU ti insegue. Fuggila completando tutto il mazzo prima di essere raggiunto!")
         layout.addWidget(self.btn_escape)
         
+        if default_mode == "fuga":
+            self.btn_escape.setChecked(True)
+        else:
+            self.btn_normal.setChecked(True)
+            
         # Connect mode change to toggle advantage setting
         self.btn_escape.toggled.connect(self.on_mode_toggled)
         
@@ -335,9 +385,14 @@ class RaceSetupDialog(QDialog):
         self.advantage_label = QLabel("<b>Vantaggio Iniziale:</b>")
         self.advantage_label.setStyleSheet("font-size: 12px; color: #555;")
         self.advantage_combo = QComboBox()
-        self.advantage_combo.addItems(["10%", "20%", "30%"])
-        self.advantage_combo.setCurrentIndex(2) # Default 30%
-        self.advantage_combo.setEnabled(False) # Only active in Escape mode
+        self.advantage_combo.addItems(["10%", "20%", "30%", "40%", "50%"])
+        
+        default_adv = int(race_config.get("default_advantage", 30.0))
+        self.advantage_combo.setCurrentText(f"{default_adv}%")
+        self.advantage_combo.setEnabled(default_mode == "fuga") # Active only in Escape mode
+        if default_mode == "fuga":
+            self.advantage_label.setStyleSheet("font-size: 12px; color: #000;")
+            
         self.advantage_layout.addWidget(self.advantage_label)
         self.advantage_layout.addWidget(self.advantage_combo)
         layout.addLayout(self.advantage_layout)
@@ -348,9 +403,10 @@ class RaceSetupDialog(QDialog):
         layout.addWidget(time_header)
         
         # Time SpinBox
-        self.time_spin = QSpinBox()
-        self.time_spin.setRange(1, 120)
-        self.time_spin.setValue(5)
+        self.time_spin = QDoubleSpinBox()
+        self.time_spin.setRange(1.0, 120.0)
+        self.time_spin.setSingleStep(0.5)
+        self.time_spin.setValue(race_config.get("default_time", 5.0))
         self.time_spin.setSuffix(" minuti")
         layout.addWidget(self.time_spin)
         
