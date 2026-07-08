@@ -5,14 +5,14 @@ from aqt import mw
 addon_package = __name__.split('.')[0]
 
 DEFAULT_CONFIG = {
-    "road_scrolling": True,
+    "road_scrolling": False,
     "show_overview_button": True,
     "default_mode": "normale",
     "default_time": 5.0,
     "default_advantage": 30.0,
-    "road_height": 70,
-    "car_cpu_offset_y": 6,
-    "car_user_offset_y": 36,
+    "road_height": 35,
+    "car_cpu_offset_y": 2,
+    "car_user_offset_y": 18,
     "car_cpu_type": "emoji",
     "car_cpu_emoji": "🚓",
     "car_cpu_flip": True,
@@ -20,7 +20,10 @@ DEFAULT_CONFIG = {
     "car_user_type": "emoji",
     "car_user_emoji": "🏎️",
     "car_user_flip": False,
-    "car_user_file": ""
+    "car_user_file": "",
+    "road_style": "image",
+    "road_solid_color": "#1e272e",
+    "road_image_file": ""
 }
 
 class AnkiRaceConfig:

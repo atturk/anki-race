@@ -137,9 +137,12 @@ html, body {
 }
 
 .car-img {
-    width: 100%;
-    height: 100%;
+    height: 24px;
+    width: auto;
+    max-width: 50px;
     object-fit: contain;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .car-tag {

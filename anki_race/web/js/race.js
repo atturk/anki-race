@@ -3,13 +3,22 @@
     let localState = null;
 
     function renderCustomizations(state) {
-        // 1. Road scrolling
+        // 1. Road style & custom texture
         const road = document.getElementById("race-road-strip");
         if (road) {
-            if (state.road_scrolling !== false) {
-                road.classList.add("animating");
+            // Hide/show minimize tab in preview
+            const tab = document.getElementById("minimize-tab");
+            if (tab) {
+                tab.style.display = state.is_preview ? "none" : "flex";
+            }
+
+            if (state.road_style === "solid") {
+                road.style.backgroundImage = "none";
+                road.style.backgroundColor = state.road_solid_color || "#1e272e";
             } else {
-                road.classList.remove("animating");
+                road.style.backgroundColor = "transparent";
+                const textureUrl = state.road_texture_url || "";
+                road.style.backgroundImage = `url('${textureUrl}')`;
             }
             
             // 2. Road height
@@ -123,6 +132,11 @@
             localState.car_user_flip = state.car_user_flip;
             localState.user_car_url = state.user_car_url;
             localState.cpu_car_url = state.cpu_car_url;
+            localState.road_style = state.road_style;
+            localState.road_solid_color = state.road_solid_color;
+            localState.road_image_file = state.road_image_file;
+            localState.road_texture_url = state.road_texture_url;
+            localState.is_preview = state.is_preview;
         }
 
         renderCustomizations(localState);

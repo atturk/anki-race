@@ -18,6 +18,8 @@ class RaceConfigDialog(QDialog):
         
         self.car_cpu_file_val = race_config.get("car_cpu_file", "")
         self.car_user_file_val = race_config.get("car_user_file", "")
+        self.road_image_file_val = race_config.get("road_image_file", "")
+        self.road_solid_color_val = race_config.get("road_solid_color", "#1e272e")
         self.preview_loaded = False
         
         self._init_ui()
@@ -85,10 +87,6 @@ class RaceConfigDialog(QDialog):
         form_layout = QFormLayout()
         layout.addLayout(form_layout)
         
-        # Road scrolling scrolling
-        self.scrolling_cb = QCheckBox("Attiva scorrimento strada (animazione)")
-        form_layout.addRow("Animazione:", self.scrolling_cb)
-        
         # Show overview button
         self.overview_btn_cb = QCheckBox("Mostra il bottone 'Gareggia' nella schermata del mazzo")
         form_layout.addRow("Integrazione UI:", self.overview_btn_cb)
@@ -127,25 +125,62 @@ class RaceConfigDialog(QDialog):
         road_box.setLayout(road_layout)
         
         self.height_slider = QSlider(Qt.Orientation.Horizontal)
-        self.height_slider.setRange(40, 120)
-        self.height_label = QLabel("70 px")
+        self.height_slider.setRange(10, 50)
+        self.height_label = QLabel("35 px")
         self.height_slider.valueChanged.connect(lambda v: self.height_label.setText(f"{v} px"))
         
         height_widget = QHBoxLayout()
         height_widget.addWidget(self.height_slider)
         height_widget.addWidget(self.height_label)
-        road_layout.addRow("Altezza strada:", height_widget)
+        road_layout.addRow("Altezza strada (10px - 50px):", height_widget)
         
         scroll_layout.addWidget(road_box)
+        
+        # Form for road styling
+        road_style_box = QGroupBox("Personalizzazione Stile Strada")
+        road_style_layout = QFormLayout()
+        road_style_box.setLayout(road_style_layout)
+        
+        self.road_style_combo = QComboBox()
+        self.road_style_combo.addItems(["Immagine (Texture)", "Tinta Unita"])
+        road_style_layout.addRow("Stile Sfondo:", self.road_style_combo)
+        
+        # Solid Color selection
+        self.road_color_btn = QPushButton("Scegli Colore...")
+        self.road_color_preview = QLabel("   ")
+        self.road_color_preview.setFixedWidth(50)
+        self.road_color_preview.setFrameShape(QFrame.Shape.Box)
+        
+        color_layout = QHBoxLayout()
+        color_layout.addWidget(self.road_color_btn)
+        color_layout.addWidget(self.road_color_preview)
+        road_style_layout.addRow("Colore Sfondo:", color_layout)
+        
+        # Road texture file selection
+        self.road_file_btn = QPushButton("Sfoglia texture...")
+        self.road_file_label = QLabel("Nessun file selezionato")
+        self.road_file_label.setStyleSheet("font-size: 10px; color: gray;")
+        
+        road_file_layout = QHBoxLayout()
+        road_file_layout.addWidget(self.road_file_btn)
+        road_file_layout.addWidget(self.road_file_label)
+        road_style_layout.addRow("File Texture:", road_file_layout)
+        
+        self.road_style_combo.currentTextChanged.connect(self._toggle_road_style_widgets)
+        self.road_color_btn.clicked.connect(self._choose_road_color)
+        self.road_file_btn.clicked.connect(self._browse_road_file)
+        
+        scroll_layout.addWidget(road_style_box)
         
         # Form for car layouts
         cars_pos_box = QGroupBox("Corsie Automobili (Allineamento Y)")
         cars_pos_layout = QFormLayout()
         cars_pos_box.setLayout(cars_pos_layout)
         
+        # Offset CPU (range -20 to 70 as requested)
         self.cpu_y_slider = QSlider(Qt.Orientation.Horizontal)
-        self.cpu_y_slider.setRange(0, 60)
-        self.cpu_y_label = QLabel("6 px")
+        self.cpu_y_slider.setRange(-20, 70)
+        self.cpu_y_label = QLabel("2 px")
         self.cpu_y_slider.valueChanged.connect(lambda v: self.cpu_y_label.setText(f"{v} px"))
         
         cpu_y_widget = QHBoxLayout()
@@ -153,9 +188,10 @@ class RaceConfigDialog(QDialog):
         cpu_y_widget.addWidget(self.cpu_y_label)
         cars_pos_layout.addRow("Offset CPU (Inseguitore):", cpu_y_widget)
         
+        # Offset User (range -20 to 70 as requested)
         self.user_y_slider = QSlider(Qt.Orientation.Horizontal)
-        self.user_y_slider.setRange(0, 60)
-        self.user_y_label = QLabel("36 px")
+        self.user_y_slider.setRange(-20, 70)
+        self.user_y_label = QLabel("18 px")
         self.user_y_slider.valueChanged.connect(lambda v: self.user_y_label.setText(f"{v} px"))
         
         user_y_widget = QHBoxLayout()
@@ -251,8 +287,7 @@ class RaceConfigDialog(QDialog):
           <li>Per ottenere prestazioni migliori, usa immagini con sfondo trasparente (.png o .svg).</li>
         </ul>
         <hr/>
-        <p>Sviluppato con ❤️ per incrementare la motivazione e la produttività.</p>
-        <p>Se riscontri bug o desideri proporre nuove feature, contribuisci su GitHub!</p>
+        <p>Sviluppato con ❤️ per rendere lo studio divertente e motivante.</p>
         """)
         layout.addWidget(info_label)
         layout.addStretch()
@@ -267,9 +302,36 @@ class RaceConfigDialog(QDialog):
         self.user_emoji_combo.setEnabled(is_emoji)
         self.user_file_btn.setEnabled(not is_emoji)
 
+    def _toggle_road_style_widgets(self, text: str) -> None:
+        is_solid = text == "Tinta Unita"
+        self.road_color_btn.setEnabled(is_solid)
+        self.road_file_btn.setEnabled(not is_solid)
+
+    def _choose_road_color(self) -> None:
+        color = QColorDialog.getColor(QColor(self.road_solid_color_val), self, "Seleziona Colore Strada")
+        if color.isValid():
+            self.road_solid_color_val = color.name()
+            self.road_color_preview.setStyleSheet(f"background-color: {self.road_solid_color_val};")
+            self.update_preview()
+
+    def _browse_road_file(self) -> None:
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Seleziona Texture Strada", "", "Immagini (*.png *.jpg *.jpeg)"
+        )
+        if file_path:
+            filename = os.path.basename(file_path)
+            addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            dest_dir = os.path.join(addon_dir, "user_files")
+            os.makedirs(dest_dir, exist_ok=True)
+            dest_path = os.path.join(dest_dir, filename)
+            shutil.copy2(file_path, dest_path)
+            
+            self.road_image_file_val = filename
+            self.road_file_label.setText(filename)
+            self.update_preview()
+
     def _load_config_values(self) -> None:
         # Tab 1: Generale
-        self.scrolling_cb.setChecked(race_config.get("road_scrolling", True))
         self.overview_btn_cb.setChecked(race_config.get("show_overview_button", True))
         
         mode = race_config.get("default_mode", "normale")
@@ -280,9 +342,14 @@ class RaceConfigDialog(QDialog):
         self.default_advantage_combo.setCurrentText(f"{adv}%")
         
         # Tab 2: Strada e Auto
-        self.height_slider.setValue(race_config.get("road_height", 70))
-        self.cpu_y_slider.setValue(race_config.get("car_cpu_offset_y", 6))
-        self.user_y_slider.setValue(race_config.get("car_user_offset_y", 36))
+        self.height_slider.setValue(race_config.get("road_height", 35))
+        self.cpu_y_slider.setValue(race_config.get("car_cpu_offset_y", 2))
+        self.user_y_slider.setValue(race_config.get("car_user_offset_y", 18))
+        
+        style = race_config.get("road_style", "image")
+        self.road_style_combo.setCurrentText("Tinta Unita" if style == "solid" else "Immagine (Texture)")
+        self.road_color_preview.setStyleSheet(f"background-color: {self.road_solid_color_val};")
+        self.road_file_label.setText(self.road_image_file_val if self.road_image_file_val else "Nessun file selezionato")
         
         cpu_type = "Emoji" if race_config.get("car_cpu_type", "emoji") == "emoji" else "Immagine personalizzata"
         self.cpu_type_combo.setCurrentText(cpu_type)
@@ -299,11 +366,12 @@ class RaceConfigDialog(QDialog):
         # Trigger visibility toggles
         self._toggle_cpu_widgets(cpu_type)
         self._toggle_user_widgets(user_type)
+        self._toggle_road_style_widgets(self.road_style_combo.currentText())
 
     def _connect_signals(self) -> None:
         # Re-render preview whenever values are modified
         widgets = [
-            self.scrolling_cb, self.cpu_flip_cb, self.user_flip_cb,
+            self.overview_btn_cb, self.cpu_flip_cb, self.user_flip_cb,
             self.height_slider, self.cpu_y_slider, self.user_y_slider
         ]
         for w in widgets:
@@ -314,7 +382,8 @@ class RaceConfigDialog(QDialog):
                 
         combos = [
             self.cpu_type_combo, self.cpu_emoji_combo,
-            self.user_type_combo, self.user_emoji_combo
+            self.user_type_combo, self.user_emoji_combo,
+            self.road_style_combo
         ]
         for c in combos:
             c.currentTextChanged.connect(self._on_widget_changed)
@@ -385,6 +454,16 @@ class RaceConfigDialog(QDialog):
                 server_url = get_url() if get_url else "http://127.0.0.1/"
                 user_car_url = f"{server_url}_addons/{addon_package}/user_files/{user_file}"
 
+        # Resolve custom road texture image file
+        road_image_name = self.road_image_file_val
+        if road_image_name:
+            addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            user_path = os.path.join(addon_dir, "user_files", road_image_name)
+            if os.path.exists(user_path):
+                get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+                server_url = get_url() if get_url else "http://127.0.0.1/"
+                road_texture_url = f"{server_url}_addons/{addon_package}/user_files/{road_image_name}"
+
         return {
             "user_position": 60.0,
             "cpu_position": 25.0,
@@ -401,7 +480,7 @@ class RaceConfigDialog(QDialog):
             "advantage": 0,
             
             # Form values
-            "road_scrolling": self.scrolling_cb.isChecked(),
+            "road_scrolling": False,
             "road_height": self.height_slider.value(),
             "car_cpu_offset_y": self.cpu_y_slider.value(),
             "car_user_offset_y": self.user_y_slider.value(),
@@ -410,7 +489,11 @@ class RaceConfigDialog(QDialog):
             "car_cpu_flip": self.cpu_flip_cb.isChecked(),
             "car_user_type": "emoji" if self.user_type_combo.currentText() == "Emoji" else "file",
             "car_user_emoji": self.user_emoji_combo.currentText(),
-            "car_user_flip": self.user_flip_cb.isChecked()
+            "car_user_flip": self.user_flip_cb.isChecked(),
+            "road_style": "solid" if self.road_style_combo.currentText() == "Tinta Unita" else "image",
+            "road_solid_color": self.road_solid_color_val,
+            "road_image_file": self.road_image_file_val,
+            "is_preview": True
         }
 
     def update_preview(self) -> None:
@@ -457,7 +540,7 @@ class RaceConfigDialog(QDialog):
         adv_text = self.default_advantage_combo.currentText().replace("%", "")
         
         updates = {
-            "road_scrolling": self.scrolling_cb.isChecked(),
+            "road_scrolling": False,
             "show_overview_button": self.overview_btn_cb.isChecked(),
             "default_mode": mode_text,
             "default_time": self.default_time_spin.value(),
@@ -472,13 +555,16 @@ class RaceConfigDialog(QDialog):
             "car_user_type": "emoji" if self.user_type_combo.currentText() == "Emoji" else "file",
             "car_user_emoji": self.user_emoji_combo.currentText(),
             "car_user_flip": self.user_flip_cb.isChecked(),
-            "car_user_file": self.car_user_file_val
+            "car_user_file": self.car_user_file_val,
+            "road_style": "solid" if self.road_style_combo.currentText() == "Tinta Unita" else "image",
+            "road_solid_color": self.road_solid_color_val,
+            "road_image_file": self.road_image_file_val
         }
         
         race_config.update(updates)
         
         # Apply updates to active widgets in Anki if visible
-        from .gui import race_bar_widget
+        from .hooks import race_bar_widget
         if race_bar_widget and race_bar_widget.isVisible():
             race_bar_widget.setFixedHeight(updates["road_height"] + 18)
             race_bar_widget.update_state()

@@ -9,6 +9,7 @@ from aqt.qt import (
     QHBoxLayout,
     QLabel,
     QSpinBox,
+    QDoubleSpinBox,
     QComboBox,
     QPushButton,
     QRadioButton,
@@ -123,6 +124,16 @@ class RaceBarWebView(AnkiWebView):
                 get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
                 server_url = get_url() if get_url else "http://127.0.0.1/"
                 user_car_url = f"{server_url}_addons/{addon_package}/user_files/{user_file_name}"
+
+        # Resolve custom road texture image file
+        road_image_name = race_config.get("road_image_file", "")
+        if road_image_name:
+            addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            user_path = os.path.join(addon_dir, "user_files", road_image_name)
+            if os.path.exists(user_path):
+                get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+                server_url = get_url() if get_url else "http://127.0.0.1/"
+                road_texture_url = f"{server_url}_addons/{addon_package}/user_files/{road_image_name}"
         
         return {
             "user_position": race_manager.user_position,
@@ -140,16 +151,20 @@ class RaceBarWebView(AnkiWebView):
             "advantage": race_manager.advantage,
             
             # Configurations
-            "road_scrolling": race_config.get("road_scrolling", True),
-            "road_height": race_config.get("road_height", 70),
-            "car_cpu_offset_y": race_config.get("car_cpu_offset_y", 6),
-            "car_user_offset_y": race_config.get("car_user_offset_y", 36),
+            "road_scrolling": race_config.get("road_scrolling", False),
+            "road_height": race_config.get("road_height", 35),
+            "car_cpu_offset_y": race_config.get("car_cpu_offset_y", 2),
+            "car_user_offset_y": race_config.get("car_user_offset_y", 18),
             "car_cpu_type": race_config.get("car_cpu_type", "emoji"),
             "car_cpu_emoji": race_config.get("car_cpu_emoji", "🚓"),
             "car_cpu_flip": race_config.get("car_cpu_flip", True),
             "car_user_type": race_config.get("car_user_type", "emoji"),
             "car_user_emoji": race_config.get("car_user_emoji", "🏎️"),
-            "car_user_flip": race_config.get("car_user_flip", False)
+            "car_user_flip": race_config.get("car_user_flip", False),
+            "road_style": race_config.get("road_style", "image"),
+            "road_solid_color": race_config.get("road_solid_color", "#1e272e"),
+            "road_image_file": race_config.get("road_image_file", ""),
+            "is_preview": False
         }
 
     def _handle_cmd(self, cmd: str) -> Any:
