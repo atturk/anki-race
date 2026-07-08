@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="css/race.css">
 </head>
 <body>
-    <div class="anki-race-bar-inner">
+    <div class="anki-race-bar-inner" id="anki-race-container">
         <!-- Track and Cars (Minimalist: HUD Removed) -->
         <div class="race-track-container">
             <div class="race-road" id="race-road-strip">
@@ -23,25 +23,10 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Race Finish Overlay -->
-    <div class="race-overlay" id="race-finish-overlay" style="display: none;">
-        <div class="overlay-card">
-            <div class="overlay-icon" id="overlay-icon">🏆</div>
-            <h2 class="overlay-title" id="overlay-title">GARA COMPLETATA</h2>
-            <div class="overlay-stats">
-                <div class="stat-item">
-                    <span class="stat-lbl">Tempo Impiegato</span>
-                    <span class="stat-val" id="stat-time">00:00</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-lbl">Carte Studiate</span>
-                    <span class="stat-val" id="stat-cards">0 / 0</span>
-                </div>
-            </div>
-            <p class="overlay-message" id="overlay-message">Hai completato lo studio prima della CPU!</p>
-            <button class="overlay-btn" id="overlay-close-btn" onclick="closeRaceOverlay()">Continua</button>
+        
+        <!-- Minimize Tab (arrow starts pointing up) -->
+        <div class="minimize-tab" id="minimize-tab">
+            <div class="minimize-arrow"></div>
         </div>
     </div>
 

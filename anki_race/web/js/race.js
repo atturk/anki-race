@@ -137,53 +137,25 @@
         }
 
         if (isGameOver) {
-            // Freeze road movement
-            const road = document.getElementById("race-road-strip");
-            if (road) road.classList.remove("animating");
-
             // Stop update loop
             if (timerInterval) clearInterval(timerInterval);
             localState.race_in_progress = false;
 
-            // Display overlay stats
-            document.getElementById("overlay-title").innerText = isVictory ? "VITTORIA!" : "GAME OVER";
-            document.getElementById("overlay-title").style.color = isVictory ? "#2ecc71" : "#e74c3c";
-            document.getElementById("overlay-icon").innerText = isVictory ? "🏆" : "💥";
-            document.getElementById("stat-time").innerText = timeStr;
-            
-            const completed = localState.total_cards - localState.remaining_cards;
-            document.getElementById("stat-cards").innerText = `${completed} / ${localState.total_cards}`;
-            document.getElementById("overlay-message").innerText = msg;
-
-            // Notify Python that the game finished
-            pycmd("anki_race_finished");
-
-            // Display overlay
-            overlay.style.display = "flex";
+            // Notify Python that the game finished with victory/defeat
+            pycmd("anki_race_finished:" + (isVictory ? "victory" : "defeat"));
         }
     }
-
-    function blockAnkiKeys(e) {
-        const overlay = document.getElementById("race-finish-overlay");
-        if (overlay && overlay.style.display !== "none") {
-            e.stopPropagation();
-            e.preventDefault();
-        }
-    }
-
-    window.closeRaceOverlay = function() {
-        const overlay = document.getElementById("race-finish-overlay");
-        if (overlay) overlay.style.display = "none";
-        
-        window.removeEventListener("keydown", blockAnkiKeys, true);
-        
-        // Notify Python that the overlay is closed, so it can hide the bar
-        pycmd("anki_race_close_overlay");
-    };
 
     // Auto-launch trigger to request initial state from Python
     setTimeout(() => {
         pycmd("anki_race_get_initial_state");
-        window.addEventListener("keydown", blockAnkiKeys, true);
+        
+        const tab = document.getElementById("minimize-tab");
+        if (tab) {
+            tab.onclick = function() {
+                const isMinimized = document.body.classList.toggle("minimized");
+                pycmd("anki_race_toggle_minimize:" + isMinimized);
+            };
+        }
     }, 50);
 })();

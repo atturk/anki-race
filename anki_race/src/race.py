@@ -13,12 +13,16 @@ class AnkiRaceManager:
         self.user_position: float = 0.0       # 0 to 100
         self.cpu_position: float = 0.0        # 0 to 100
         self.race_in_progress: bool = False
+        self.race_paused: bool = False        # Tracks whether the race is currently paused
+        self.deck_id: Optional[int] = None    # ID of the deck being studied in the race
         
         # Timing helpers
         self.start_time: float = 0.0
+        self.elapsed_before_pause: float = 0.0 # Time accumulated before a pause
 
     def start_race(self, deck_id: int, settings: Dict[str, Any]) -> None:
         """Initializes the race state and reads cards to study for the selected deck."""
+        self.deck_id = deck_id
         self.mode = settings.get("mode", "normale")
         self.chosen_time = float(settings.get("chosen_time", 5.0)) # Default 5 minutes
         self.advantage = float(settings.get("advantage", 0.0)) if self.mode == "fuga" else 0.0
@@ -30,9 +34,23 @@ class AnkiRaceManager:
         # Reset positions (User starts at their advantage percentage)
         self.user_position = self.advantage
         self.cpu_position = 0.0
+        self.elapsed_before_pause = 0.0
+        self.race_paused = False
             
         self.start_time = time.time()
         self.race_in_progress = True
+
+    def pause_race(self) -> None:
+        """Pauses the race timer and execution."""
+        if self.race_in_progress and not self.race_paused:
+            self.elapsed_before_pause += time.time() - self.start_time
+            self.race_paused = True
+
+    def resume_race(self) -> None:
+        """Resumes the race from a paused state."""
+        if self.race_in_progress and self.race_paused:
+            self.start_time = time.time()
+            self.race_paused = False
 
     def calculate_positions(self) -> None:
         """Calculates user and CPU positions based on card progress and time elapsed."""
@@ -42,13 +60,15 @@ class AnkiRaceManager:
         # 1. User position (advances constants cards percentage, starting from advantage)
         if self.total_cards > 0:
             completed = self.total_cards - self.remaining_cards
-            # Remaining track to cover is (100.0 - self.advantage)
             self.user_position = min(100.0, self.advantage + ((100.0 - self.advantage) * completed / self.total_cards))
         else:
             self.user_position = 100.0
 
         # 2. CPU position (travels at constant speed to reach 100% in chosen_time in both modes)
-        elapsed_seconds = time.time() - self.start_time
+        elapsed_seconds = self.elapsed_before_pause
+        if not self.race_paused:
+            elapsed_seconds += time.time() - self.start_time
+            
         total_seconds = self.chosen_time * 60.0
         
         if total_seconds > 0:

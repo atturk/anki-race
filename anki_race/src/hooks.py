@@ -140,13 +140,27 @@ def on_card_answered(reviewer: Any, card: Any, ease: int) -> None:
               f"Positions: User {race_manager.user_position:.1f}% vs CPU {race_manager.cpu_position:.1f}%")
 
 def on_state_did_change(new_state: str, old_state: str) -> None:
-    """Ensures that the persistent race bar widget is hidden when leaving the reviewer screen."""
-    if new_state != "review":
+    """Ensures that the persistent race bar widget is paused/resumed and shown/hidden based on state."""
+    if new_state == "review":
+        if race_manager.race_in_progress:
+            current_deck_id = mw.col.decks.selected()
+            if current_deck_id == race_manager.deck_id:
+                if race_manager.race_paused:
+                    race_manager.resume_race()
+                    if race_bar_widget:
+                        race_bar_widget.update_state()
+                        race_bar_widget.show()
+            else:
+                # User switched to a different deck, abort the old race
+                race_manager.race_in_progress = False
+                race_manager.race_paused = False
+                if race_bar_widget:
+                    race_bar_widget.hide()
+    else: # new_state != "review"
         if race_bar_widget:
             race_bar_widget.hide()
-        # Reset race status if the user aborted the session early
-        if race_manager.race_in_progress:
-            race_manager.race_in_progress = False
+        if race_manager.race_in_progress and not race_manager.race_paused:
+            race_manager.pause_race()
 
 # Setup Hooks
 if mw:

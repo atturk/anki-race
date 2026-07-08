@@ -8,7 +8,9 @@ html, body {
 /* Container styles */
 #anki-race-container {
     width: 100%;
-    background-color: #1e272e;
+    height: 88px;
+    position: relative;
+    background-color: transparent;
     box-sizing: border-box;
     padding: 0;
     margin: 0;
@@ -17,10 +19,10 @@ html, body {
 
 .anki-race-bar-inner {
     width: 100%;
+    height: 88px;
+    position: relative;
     display: flex;
     flex-direction: column;
-    flex-direction: column;
-    gap: 6px;
 }
 
 /* HUD styles */
@@ -66,11 +68,17 @@ html, body {
 /* Track styles - Spans full width of the window */
 .race-track-container {
     width: 100%;
+    height: 72px; /* road + borders */
     background-color: #2c3e50;
     overflow: hidden;
     box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.4);
     border-top: 1px solid #34495e;
     border-bottom: 1px solid #34495e;
+    transition: margin-top 0.2s ease-out;
+}
+
+.minimized .race-track-container {
+    margin-top: -72px;
 }
 
 .race-road {
@@ -154,104 +162,33 @@ html, body {
     background-color: #e74c3c;
 }
 
-/* Overlay styling (Fade in, Backdrop blur) */
-.race-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(30, 39, 46, 0.85);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+/* Minimize Tab styling */
+.minimize-tab {
+    position: absolute;
+    bottom: 0;
+    right: 20px;
+    width: 40px;
+    height: 18px;
+    background-color: #2f3640;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 9999;
-    opacity: 0;
-    animation: fadeIn 0.4s forwards ease-out;
-}
-
-@keyframes fadeIn {
-    to { opacity: 1; }
-}
-
-.overlay-card {
-    background-color: #2f3640;
-    border: 2px solid #718093;
-    border-radius: 12px;
-    width: 320px;
-    padding: 25px;
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    transform: scale(0.9);
-    animation: scaleUp 0.3s 0.1s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes scaleUp {
-    to { transform: scale(1); }
-}
-
-.overlay-icon {
-    font-size: 48px;
-    margin-bottom: 12px;
-}
-
-.overlay-title {
-    font-size: 20px;
-    font-weight: bold;
-    color: #f1c40f;
-    margin-bottom: 15px;
-    letter-spacing: 0.5px;
-}
-
-.overlay-stats {
-    display: flex;
-    justify-content: space-around;
-    background-color: #1e272e;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 20px;
-}
-
-.stat-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.stat-lbl {
-    font-size: 10px;
-    color: #7f8c8d;
-    text-transform: uppercase;
-}
-
-.stat-val {
-    font-size: 14px;
-    font-weight: bold;
-    color: #f5f6fa;
-}
-
-.overlay-message {
-    font-size: 13px;
-    line-height: 1.4;
-    color: #dcdde1;
-    margin-bottom: 20px;
-}
-
-.overlay-btn {
-    background-color: #2ecc71;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s;
-    width: 100%;
+    z-index: 999;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-.overlay-btn:hover {
-    background-color: #27ae60;
+.minimize-arrow {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 6px solid #f5f6fa;
+    transition: transform 0.2s ease;
+}
+
+.minimized .minimize-arrow {
+    transform: rotate(180deg);
 }

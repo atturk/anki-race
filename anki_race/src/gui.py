@@ -34,7 +34,7 @@ def get_asset_url(filename: str) -> str:
 class RaceBarWebView(AnkiWebView):
     def __init__(self, parent: Any = None) -> None:
         super().__init__(parent)
-        self.setFixedHeight(72) # Set height of the persistent race bar widget (matches road height)
+        self.setFixedHeight(88) # Set height of the persistent race bar widget (70px road + 18px tab)
         self.set_bridge_command(self._handle_cmd, self)
         
     def load_race_html(self) -> None:
@@ -112,10 +112,30 @@ class RaceBarWebView(AnkiWebView):
         if cmd == "anki_race_get_initial_state":
             state = self._get_state_dict()
             self.eval(f"if (window.initializeRace) {{ window.initializeRace({json.dumps(state)}); }}")
-        elif cmd == "anki_race_finished":
+        elif cmd.startswith("anki_race_finished:"):
+            result = cmd.split(":")[1]
             race_manager.race_in_progress = False
-        elif cmd == "anki_race_close_overlay":
-            self.hide()
+            race_manager.race_paused = False
+            self.hide() # Close the bar immediately
+            
+            # Show a native popup dialog
+            from aqt.utils import showInfo
+            if result == "victory":
+                if race_manager.mode == "fuga":
+                    showInfo("🏆 Vittoria!\n\nSei sfuggito all'inseguitore completando tutto il mazzo!", title="Anki Race")
+                else:
+                    showInfo("🏆 Vittoria!\n\nHai battuto la CPU tagliando il traguardo per primo!", title="Anki Race")
+            else:
+                if race_manager.mode == "fuga":
+                    showInfo("💥 Game Over!\n\nL'inseguitore ti ha raggiunto! Fai più in fretta la prossima volta!", title="Anki Race")
+                else:
+                    showInfo("💥 Game Over!\n\nLa CPU ha tagliato il traguardo prima di te. Riprova!", title="Anki Race")
+        elif cmd.startswith("anki_race_toggle_minimize:"):
+            is_minimized = cmd.split(":")[1] == "true"
+            if is_minimized:
+                self.setFixedHeight(18) # Collapse to show only the minimize tab
+            else:
+                self.setFixedHeight(88) # Expand to full height (road + tab)
         return None
 
 
