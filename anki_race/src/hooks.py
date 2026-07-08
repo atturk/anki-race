@@ -2,29 +2,62 @@ from typing import Any
 from aqt import mw, gui_hooks
 from aqt.utils import showInfo
 from .race import race_manager
+from .gui import RaceSetupDialog
+
+def start_race_flow(deck_id: int) -> None:
+    """Helper to open the setup dialog, initialize the race, and start studying."""
+    if not mw or not mw.col:
+        return
+        
+    due_count = race_manager._get_due_card_count(deck_id)
+    if due_count == 0:
+        showInfo("Non ci sono carte da studiare in questo mazzo!")
+        return
+        
+    # Get deck name
+    deck = mw.col.decks.get(deck_id)
+    deck_name = deck.get("name", "Mazzo Sconosciuto")
+    
+    # Open the setup dialog modal
+    dialog = RaceSetupDialog(mw, deck_name, due_count)
+    if dialog.exec():  # User clicked "Gareggia!"
+        settings = dialog.get_settings()
+        race_manager.start_race(deck_id, settings)
+        
+        # Start studying by changing main window state to review
+        mw.moveToState("review")
 
 def on_menu_action() -> None:
     """Triggered when the user clicks 'Test Anki Race' in the Tools menu."""
     if not mw or not mw.col:
         return
-        
     current_deck_id = mw.col.decks.selected()
-    due_count = race_manager._get_due_card_count(current_deck_id)
-    
-    if due_count == 0:
-        showInfo("Non ci sono carte da studiare in questo mazzo!")
-        return
-        
-    settings = {"mode": "normale", "chosen_time": 5.0}
-    race_manager.start_race(current_deck_id, settings)
-    
-    showInfo(f"Gara avviata! Carte: {race_manager.total_cards}. Tempo: {race_manager.chosen_time} min.")
-    mw.moveToState("review")
+    start_race_flow(current_deck_id)
 
 def on_overview_will_render_content(overview: Any, content: Any) -> None:
     """Injects a 'Gareggia' button into the deck overview screen beneath the 'Study Now' button."""
-    # We append a script to content.table to query the DOM and insert our button
+    # We append custom styles and a script to content.table
     content.table += """
+<style>
+#anki-race-btn {
+    margin-top: 10px !important;
+    background-color: #e74c3c !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 4px !important;
+    padding: 10px 24px !important;
+    cursor: pointer !important;
+    font-size: 1em !important;
+    font-weight: bold !important;
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+    display: inline-block !important;
+    text-decoration: none !important;
+}
+#anki-race-btn:hover {
+    background-color: #c0392b !important;
+    color: #ffffff !important;
+}
+</style>
 <script>
 (function() {
     function injectButton() {
@@ -36,15 +69,6 @@ def on_overview_will_render_content(overview: Any, content: Any) -> None:
             const raceBtn = document.createElement("button");
             raceBtn.id = "anki-race-btn";
             raceBtn.innerText = "Gareggia";
-            raceBtn.className = "study race-button";
-            raceBtn.style.marginTop = "10px";
-            raceBtn.style.backgroundColor = "#e74c3c";
-            raceBtn.style.color = "#ffffff";
-            raceBtn.style.border = "none";
-            raceBtn.style.borderRadius = "4px";
-            raceBtn.style.padding = "10px 24px";
-            raceBtn.style.cursor = "pointer";
-            raceBtn.style.fontSize = "1em";
             
             raceBtn.onclick = function() {
                 pycmd("anki_race_setup");
@@ -67,17 +91,7 @@ def on_js_message(handled: tuple[bool, Any], message: str, context: Any) -> tupl
             return (True, None)
             
         current_deck_id = mw.col.decks.selected()
-        due_count = race_manager._get_due_card_count(current_deck_id)
-        
-        if due_count == 0:
-            showInfo("Non ci sono carte da studiare in questo mazzo!")
-            return (True, None)
-            
-        settings = {"mode": "normale", "chosen_time": 5.0}
-        race_manager.start_race(current_deck_id, settings)
-        
-        # Transition to the review screen
-        mw.moveToState("review")
+        start_race_flow(current_deck_id)
         return (True, None)
         
     return handled
