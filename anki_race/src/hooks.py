@@ -1,6 +1,6 @@
 from typing import Any, Optional
 from aqt import mw, gui_hooks
-from aqt.qt import QMenu
+from aqt.qt import QMenu, QShortcut, QKeySequence
 from aqt.utils import showInfo
 from .race import race_manager
 from .gui import RaceSetupDialog, RaceBarWebView
@@ -172,6 +172,29 @@ def on_state_did_change(new_state: str, old_state: str) -> None:
         if race_manager.race_in_progress and not race_manager.race_paused:
             race_manager.pause_race()
 
+shortcut_instance: Optional[QShortcut] = None
+
+def register_shortcut() -> None:
+    """Registers or updates the keyboard shortcut for starting a race."""
+    global shortcut_instance
+    if not mw:
+        return
+    
+    # Disable/remove existing shortcut
+    if shortcut_instance:
+        shortcut_instance.setEnabled(False)
+        shortcut_instance.setParent(None)
+        shortcut_instance = None
+        
+    from .config import race_config
+    shortcut_str = race_config.get("shortcut", "Ctrl+R")
+    if shortcut_str:
+        try:
+            shortcut_instance = QShortcut(QKeySequence(shortcut_str), mw)
+            shortcut_instance.activated.connect(on_menu_action)
+        except Exception as e:
+            print(f"[AnkiRace] Failed to register shortcut '{shortcut_str}': {e}")
+
 def setup_tools_menu() -> None:
     """Creates a sub-menu under Tools -> Anki Race with 'Inizia Gara' and 'Personalizza' options."""
     if not mw:
@@ -189,6 +212,9 @@ def setup_tools_menu() -> None:
     
     # Add to Tools menu
     mw.form.menuTools.addMenu(menu)
+    
+    # Register keyboard shortcut
+    register_shortcut()
 
 def on_open_config() -> None:
     """Opens the custom configuration dialog."""

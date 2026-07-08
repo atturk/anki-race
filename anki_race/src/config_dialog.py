@@ -9,6 +9,26 @@ from .config import race_config
 
 addon_package = __name__.split('.')[0]
 
+def is_emoji(char: str) -> bool:
+    if not char:
+        return False
+    cp = ord(char)
+    # Emojis are generally characters in these unicode blocks:
+    if (0x1F300 <= cp <= 0x1F5FF or
+        0x1F600 <= cp <= 0x1F64F or
+        0x1F680 <= cp <= 0x1F6FF or
+        0x1F900 <= cp <= 0x1F9FF or
+        0x1FA70 <= cp <= 0x1FAFF or
+        0x2600 <= cp <= 0x27BF or
+        0x1F1E6 <= cp <= 0x1F1FF or
+        cp == 0x20E3 or
+        0xFE00 <= cp <= 0xFE0F):
+        return True
+    # Allow Zero-Width-Joiner and Variation Selectors
+    if cp == 0x200D or cp == 0xFE0F:
+        return True
+    return False
+
 class RaceConfigDialog(QDialog):
     def __init__(self, parent: Any = None) -> None:
         super().__init__(parent)
@@ -108,6 +128,10 @@ class RaceConfigDialog(QDialog):
         self.default_advantage_combo.addItems(["10%", "20%", "30%", "40%", "50%"])
         form_layout.addRow("Vantaggio default (Fuga):", self.default_advantage_combo)
         
+        # Keyboard Shortcut Sequence Edit
+        self.shortcut_edit = QKeySequenceEdit()
+        form_layout.addRow("Scorciatoia avvio gara:", self.shortcut_edit)
+        
         layout.addStretch()
 
     def _setup_road_cars_tab(self) -> None:
@@ -124,15 +148,16 @@ class RaceConfigDialog(QDialog):
         road_layout = QFormLayout()
         road_box.setLayout(road_layout)
         
+        # Adjusted height slider range to 20 - 50 px as requested
         self.height_slider = QSlider(Qt.Orientation.Horizontal)
-        self.height_slider.setRange(10, 50)
+        self.height_slider.setRange(20, 50)
         self.height_label = QLabel("35 px")
         self.height_slider.valueChanged.connect(lambda v: self.height_label.setText(f"{v} px"))
         
         height_widget = QHBoxLayout()
         height_widget.addWidget(self.height_slider)
         height_widget.addWidget(self.height_label)
-        road_layout.addRow("Altezza strada (10px - 50px):", height_widget)
+        road_layout.addRow("Altezza strada (20px - 50px):", height_widget)
         
         scroll_layout.addWidget(road_box)
         
@@ -177,7 +202,7 @@ class RaceConfigDialog(QDialog):
         cars_pos_layout = QFormLayout()
         cars_pos_box.setLayout(cars_pos_layout)
         
-        # Offset CPU (range -20 to 70 as requested)
+        # Offset CPU (range -20 to 70)
         self.cpu_y_slider = QSlider(Qt.Orientation.Horizontal)
         self.cpu_y_slider.setRange(-20, 70)
         self.cpu_y_label = QLabel("2 px")
@@ -188,7 +213,7 @@ class RaceConfigDialog(QDialog):
         cpu_y_widget.addWidget(self.cpu_y_label)
         cars_pos_layout.addRow("Offset CPU (Inseguitore):", cpu_y_widget)
         
-        # Offset User (range -20 to 70 as requested)
+        # Offset User (range -20 to 70)
         self.user_y_slider = QSlider(Qt.Orientation.Horizontal)
         self.user_y_slider.setRange(-20, 70)
         self.user_y_label = QLabel("18 px")
@@ -210,10 +235,11 @@ class RaceConfigDialog(QDialog):
         self.cpu_type_combo.addItems(["Emoji", "Immagine personalizzata"])
         cpu_box_layout.addRow("Tipo:", self.cpu_type_combo)
         
-        self.cpu_emoji_combo = QComboBox()
-        self.cpu_emoji_combo.setEditable(True)
-        self.cpu_emoji_combo.addItems(["🚓", "🚑", "🚒", "🏎️", "🚗", "🛵", "🏍️", "🏃", "🐆", "🦖", "🛸", "👾", "👻", "🤖", "🐱", "🐶"])
-        cpu_box_layout.addRow("Emoji:", self.cpu_emoji_combo)
+        # Changed CPU emoji input to QLineEdit with emoji validator
+        self.cpu_emoji_input = QLineEdit()
+        self.cpu_emoji_input.setPlaceholderText("Incolla o digita emoji qui...")
+        cpu_box_layout.addRow("Emoji:", self.cpu_emoji_input)
+        self.cpu_emoji_input.textChanged.connect(self._on_cpu_emoji_changed)
         
         self.cpu_file_btn = QPushButton("Sfoglia immagine...")
         self.cpu_file_label = QLabel("Nessun file selezionato")
@@ -237,10 +263,11 @@ class RaceConfigDialog(QDialog):
         self.user_type_combo.addItems(["Emoji", "Immagine personalizzata"])
         user_box_layout.addRow("Tipo:", self.user_type_combo)
         
-        self.user_emoji_combo = QComboBox()
-        self.user_emoji_combo.setEditable(True)
-        self.user_emoji_combo.addItems(["🏎️", "🚗", "🚙", "🚕", "🛵", "🏍️", "🚲", "🏃", "🛹", "🐎", "🐬", "🛸", "🚀", "🤖"])
-        user_box_layout.addRow("Emoji:", self.user_emoji_combo)
+        # Changed User emoji input to QLineEdit with emoji validator
+        self.user_emoji_input = QLineEdit()
+        self.user_emoji_input.setPlaceholderText("Incolla o digita emoji qui...")
+        user_box_layout.addRow("Emoji:", self.user_emoji_input)
+        self.user_emoji_input.textChanged.connect(self._on_user_emoji_changed)
         
         self.user_file_btn = QPushButton("Sfoglia immagine...")
         self.user_file_label = QLabel("Nessun file selezionato")
@@ -275,6 +302,7 @@ class RaceConfigDialog(QDialog):
         info_label = QLabel()
         info_label.setOpenExternalLinks(True)
         info_label.setTextFormat(Qt.TextFormat.RichText)
+        info_label.setWordWrap(True) # Word Wrap enabled to adapt to dialog resizing
         info_label.setText("""
         <h3>Anki Race Add-on</h3>
         <p><b>Versione:</b> 1.0.0</p>
@@ -292,14 +320,32 @@ class RaceConfigDialog(QDialog):
         layout.addWidget(info_label)
         layout.addStretch()
 
+    def _on_cpu_emoji_changed(self, text: str) -> None:
+        # Filter input to contain only emoji characters
+        cleaned = "".join([c for c in text if is_emoji(c)])
+        if cleaned != text:
+            self.cpu_emoji_input.blockSignals(True)
+            self.cpu_emoji_input.setText(cleaned)
+            self.cpu_emoji_input.blockSignals(False)
+        self.update_preview()
+
+    def _on_user_emoji_changed(self, text: str) -> None:
+        # Filter input to contain only emoji characters
+        cleaned = "".join([c for c in text if is_emoji(c)])
+        if cleaned != text:
+            self.user_emoji_input.blockSignals(True)
+            self.user_emoji_input.setText(cleaned)
+            self.user_emoji_input.blockSignals(False)
+        self.update_preview()
+
     def _toggle_cpu_widgets(self, text: str) -> None:
         is_emoji = text == "Emoji"
-        self.cpu_emoji_combo.setEnabled(is_emoji)
+        self.cpu_emoji_input.setEnabled(is_emoji)
         self.cpu_file_btn.setEnabled(not is_emoji)
 
     def _toggle_user_widgets(self, text: str) -> None:
         is_emoji = text == "Emoji"
-        self.user_emoji_combo.setEnabled(is_emoji)
+        self.user_emoji_input.setEnabled(is_emoji)
         self.user_file_btn.setEnabled(not is_emoji)
 
     def _toggle_road_style_widgets(self, text: str) -> None:
@@ -341,6 +387,10 @@ class RaceConfigDialog(QDialog):
         adv = int(race_config.get("default_advantage", 30.0))
         self.default_advantage_combo.setCurrentText(f"{adv}%")
         
+        # Shortcut key sequence
+        shortcut_str = race_config.get("shortcut", "Ctrl+R")
+        self.shortcut_edit.setKeySequence(QKeySequence(shortcut_str))
+        
         # Tab 2: Strada e Auto
         self.height_slider.setValue(race_config.get("road_height", 35))
         self.cpu_y_slider.setValue(race_config.get("car_cpu_offset_y", 2))
@@ -353,13 +403,13 @@ class RaceConfigDialog(QDialog):
         
         cpu_type = "Emoji" if race_config.get("car_cpu_type", "emoji") == "emoji" else "Immagine personalizzata"
         self.cpu_type_combo.setCurrentText(cpu_type)
-        self.cpu_emoji_combo.setCurrentText(race_config.get("car_cpu_emoji", "🚓"))
+        self.cpu_emoji_input.setText(race_config.get("car_cpu_emoji", "🚓"))
         self.cpu_flip_cb.setChecked(race_config.get("car_cpu_flip", True))
         self.cpu_file_label.setText(self.car_cpu_file_val if self.car_cpu_file_val else "Nessun file selezionato")
         
         user_type = "Emoji" if race_config.get("car_user_type", "emoji") == "emoji" else "Immagine personalizzata"
         self.user_type_combo.setCurrentText(user_type)
-        self.user_emoji_combo.setCurrentText(race_config.get("car_user_emoji", "🏎️"))
+        self.user_emoji_input.setText(race_config.get("car_user_emoji", "🏎️"))
         self.user_flip_cb.setChecked(race_config.get("car_user_flip", False))
         self.user_file_label.setText(self.car_user_file_val if self.car_user_file_val else "Nessun file selezionato")
         
@@ -381,9 +431,7 @@ class RaceConfigDialog(QDialog):
                 w.stateChanged.connect(self._on_widget_changed)
                 
         combos = [
-            self.cpu_type_combo, self.cpu_emoji_combo,
-            self.user_type_combo, self.user_emoji_combo,
-            self.road_style_combo
+            self.cpu_type_combo, self.user_type_combo, self.road_style_combo
         ]
         for c in combos:
             c.currentTextChanged.connect(self._on_widget_changed)
@@ -485,10 +533,10 @@ class RaceConfigDialog(QDialog):
             "car_cpu_offset_y": self.cpu_y_slider.value(),
             "car_user_offset_y": self.user_y_slider.value(),
             "car_cpu_type": "emoji" if self.cpu_type_combo.currentText() == "Emoji" else "file",
-            "car_cpu_emoji": self.cpu_emoji_combo.currentText(),
+            "car_cpu_emoji": self.cpu_emoji_input.text(),
             "car_cpu_flip": self.cpu_flip_cb.isChecked(),
             "car_user_type": "emoji" if self.user_type_combo.currentText() == "Emoji" else "file",
-            "car_user_emoji": self.user_emoji_combo.currentText(),
+            "car_user_emoji": self.user_emoji_input.text(),
             "car_user_flip": self.user_flip_cb.isChecked(),
             "road_style": "solid" if self.road_style_combo.currentText() == "Tinta Unita" else "image",
             "road_solid_color": self.road_solid_color_val,
@@ -549,24 +597,28 @@ class RaceConfigDialog(QDialog):
             "car_cpu_offset_y": self.cpu_y_slider.value(),
             "car_user_offset_y": self.user_y_slider.value(),
             "car_cpu_type": "emoji" if self.cpu_type_combo.currentText() == "Emoji" else "file",
-            "car_cpu_emoji": self.cpu_emoji_combo.currentText(),
+            "car_cpu_emoji": self.cpu_emoji_input.text(),
             "car_cpu_flip": self.cpu_flip_cb.isChecked(),
             "car_cpu_file": self.car_cpu_file_val,
             "car_user_type": "emoji" if self.user_type_combo.currentText() == "Emoji" else "file",
-            "car_user_emoji": self.user_emoji_combo.currentText(),
+            "car_user_emoji": self.user_emoji_input.text(),
             "car_user_flip": self.user_flip_cb.isChecked(),
             "car_user_file": self.car_user_file_val,
             "road_style": "solid" if self.road_style_combo.currentText() == "Tinta Unita" else "image",
             "road_solid_color": self.road_solid_color_val,
-            "road_image_file": self.road_image_file_val
+            "road_image_file": self.road_image_file_val,
+            "shortcut": self.shortcut_edit.keySequence().toString()
         }
         
         race_config.update(updates)
         
         # Apply updates to active widgets in Anki if visible
-        from .hooks import race_bar_widget
+        from .hooks import race_bar_widget, register_shortcut
         if race_bar_widget and race_bar_widget.isVisible():
             race_bar_widget.setFixedHeight(updates["road_height"] + 18)
             race_bar_widget.update_state()
             
+        # Re-register the shortcut in case it changed
+        register_shortcut()
+        
         self.accept()

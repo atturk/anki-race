@@ -23,7 +23,8 @@ DEFAULT_CONFIG = {
     "car_user_file": "",
     "road_style": "image",
     "road_solid_color": "#1e272e",
-    "road_image_file": ""
+    "road_image_file": "",
+    "shortcut": "Ctrl+R"
 }
 
 class AnkiRaceConfig:
