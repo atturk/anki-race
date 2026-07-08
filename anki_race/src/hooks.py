@@ -163,10 +163,6 @@ def on_state_did_change(new_state: str, old_state: str) -> None:
                 if race_bar_widget:
                     race_bar_widget.hide()
     else: # new_state != "review"
-        # Safety check: if victory confetti animation is playing, do NOT hide or pause
-        if race_bar_widget and mw and race_bar_widget.height() == mw.rect().height():
-            return
-            
         if race_bar_widget:
             race_bar_widget.hide()
         if race_manager.race_in_progress and not race_manager.race_paused:

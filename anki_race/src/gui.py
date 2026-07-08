@@ -143,10 +143,127 @@ class RaceBarWebView(AnkiWebView):
             return
         race_manager.race_in_progress = False
         race_manager.race_paused = False
-        if mw:
-            self.setFixedHeight(mw.rect().height())
-        self.eval("if (window.playVictoryConfetti) { window.playVictoryConfetti(); }")
+        self.hide() # Close the top bar immediately so it stops shifting layout
+        self.setFixedHeight(88) # Reset height to standard
+        
+        # Wait 300ms for Anki's main WebView to load the congratulations/overview screen, then shoot confetti
+        QTimer.singleShot(300, self.inject_confetti_into_main_webview)
+        # Show native popup after confetti animation plays for 2.5s
         QTimer.singleShot(2500, self.show_victory_popup)
+
+    def inject_confetti_into_main_webview(self) -> None:
+        """Injects CSS/JS confetti directly into Anki's main webview to celebrate victory."""
+        if not mw or not mw.web:
+            return
+            
+        js_code = """
+        (function() {
+            // Remove any existing overlay
+            const oldOverlay = document.getElementById("victory-confetti-overlay");
+            if (oldOverlay) oldOverlay.remove();
+
+            // Inject Confetti CSS styles
+            const style = document.createElement('style');
+            style.id = "victory-confetti-style";
+            style.innerHTML = `
+                .confetti-particle {
+                    position: fixed;
+                    width: 9px;
+                    height: 9px;
+                    opacity: 0.85;
+                    pointer-events: none;
+                    z-index: 99999;
+                }
+                #victory-confetti-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.4);
+                    pointer-events: none;
+                    z-index: 99998;
+                    transition: opacity 0.5s ease;
+                    opacity: 1;
+                }
+            `;
+            document.head.appendChild(style);
+
+            // Create background dark overlay
+            const overlay = document.createElement('div');
+            overlay.id = "victory-confetti-overlay";
+            document.body.appendChild(overlay);
+
+            // Confetti generation physics
+            const colors = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6', '#e67e22'];
+            const container = document.body;
+            
+            function createConfetti(x, y, angle, spread) {
+                for (let i = 0; i < 45; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'confetti-particle';
+                    
+                    const isCircle = Math.random() > 0.5;
+                    const w = 8 + Math.random() * 12;
+                    const h = isCircle ? w : 6 + Math.random() * 10;
+                    
+                    p.style.width = w + 'px';
+                    p.style.height = h + 'px';
+                    p.style.borderRadius = isCircle ? '50%' : '2px';
+                    p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    p.style.left = x + 'px';
+                    p.style.top = y + 'px';
+                    
+                    const a = angle + (Math.random() - 0.5) * spread;
+                    const speed = 12 + Math.random() * 22;
+                    p.vx = Math.cos(a) * speed;
+                    p.vy = Math.sin(a) * speed - 7;
+                    p.gravity = 0.38;
+                    p.rotation = Math.random() * 360;
+                    p.rotSpeed = (Math.random() - 0.5) * 15;
+                    
+                    container.appendChild(p);
+                    
+                    let ticks = 0;
+                    const interval = setInterval(() => {
+                        p.vx *= 0.97;
+                        p.vy += p.gravity;
+                        p.style.left = (parseFloat(p.style.left) + p.vx) + 'px';
+                        p.style.top = (parseFloat(p.style.top) + p.vy) + 'px';
+                        p.rotation += p.rotSpeed;
+                        p.style.transform = `rotate(${p.rotation}deg)`;
+                        
+                        ticks++;
+                        if (ticks > 120 || parseFloat(p.style.top) > window.innerHeight) {
+                            clearInterval(interval);
+                            p.remove();
+                        }
+                    }, 16);
+                }
+            }
+            
+            // Shoot from left and right corners
+            createConfetti(0, window.innerHeight, -Math.PI / 4, Math.PI / 6);
+            createConfetti(window.innerWidth, window.innerHeight, -3 * Math.PI / 4, Math.PI / 6);
+            
+            // Second burst
+            setTimeout(() => {
+                createConfetti(0, window.innerHeight, -Math.PI / 4, Math.PI / 6);
+                createConfetti(window.innerWidth, window.innerHeight, -3 * Math.PI / 4, Math.PI / 6);
+            }, 550);
+
+            // Fade out and remove overlay
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.remove();
+                    const st = document.getElementById("victory-confetti-style");
+                    if (st) st.remove();
+                }, 500);
+            }, 2200);
+        })();
+        """
+        mw.web.eval(js_code)
 
     def show_victory_popup(self) -> None:
         """Displays the native Qt Victory dialog popup and resets widget layouts."""
