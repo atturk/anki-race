@@ -108,8 +108,11 @@ class RaceConfigDialog(QDialog):
         layout.addLayout(form_layout)
         
         # Show overview button
-        self.overview_btn_cb = QCheckBox("Mostra il bottone 'Gareggia' nella schermata del mazzo")
-        form_layout.addRow("Integrazione UI:", self.overview_btn_cb)
+        from aqt.qt import QLabel
+        overview_label = QLabel("Mostra il bottone 'Gareggia' / 'Interrompi Gara' nella schermata del mazzo:")
+        overview_label.setWordWrap(True)
+        self.overview_btn_cb = QCheckBox()
+        form_layout.addRow(overview_label, self.overview_btn_cb)
         
         # Default game mode
         self.default_mode_combo = QComboBox()
@@ -133,8 +136,10 @@ class RaceConfigDialog(QDialog):
         form_layout.addRow("Scorciatoia avvio gara:", self.shortcut_edit)
         
         # Show active race flag in deck list
-        self.show_flag_cb = QCheckBox("Mostra icona bandierina gara nel menu mazzi")
-        form_layout.addRow("Stato Gara in Mazzi:", self.show_flag_cb)
+        flag_label = QLabel("Mostra icona bandierina gara nel menu mazzi:")
+        flag_label.setWordWrap(True)
+        self.show_flag_cb = QCheckBox()
+        form_layout.addRow(flag_label, self.show_flag_cb)
         
         layout.addStretch()
 

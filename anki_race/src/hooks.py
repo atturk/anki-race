@@ -181,7 +181,7 @@ def stop_active_race() -> None:
     if mw:
         if mw.state == "overview" and getattr(mw, "overview", None):
             mw.overview.refresh()
-        if getattr(mw, "deckBrowser", None):
+        elif mw.state == "deckBrowser" and getattr(mw, "deckBrowser", None):
             mw.deckBrowser.refresh()
 
 def on_js_message(handled: tuple[bool, Any], message: str, context: Any) -> tuple[bool, Any]:
