@@ -58,13 +58,52 @@ def on_menu_action() -> None:
     start_race_flow(current_deck_id)
 
 def on_overview_will_render_content(overview: Any, content: Any) -> None:
-    """Injects a 'Gareggia' button into the deck overview screen beneath the 'Study Now' button."""
+    """Injects a 'Gareggia' (or 'Interrompi Gara') button into the deck overview screen beneath the 'Study Now' button."""
     from .config import race_config
     if not race_config.get("show_overview_button", True):
         return
-    # We append custom styles and a script to content.table
-    content.table += """
-<style>
+        
+    current_deck_id = mw.col.decks.selected() if mw and mw.col else None
+    is_active_race = (
+        current_deck_id is not None
+        and race_manager.race_in_progress
+        and race_manager.deck_id == current_deck_id
+    )
+    
+    btn_text = "Interrompi Gara" if is_active_race else "Gareggia"
+    btn_cmd = "anki_race_stop" if is_active_race else "anki_race_setup"
+    
+    # Red styling for Gareggia, dark slate styling for Interrompi Gara
+    if is_active_race:
+        btn_style = """
+#anki-race-btn {
+    margin-top: 10px !important;
+    background: #34495e !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 5px !important;
+    padding: 10px 24px !important;
+    cursor: pointer !important;
+    font-size: 1em !important;
+    font-weight: bold !important;
+    transition: all 0.2s ease !important;
+    display: inline-block !important;
+    text-decoration: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+#anki-race-btn:hover {
+    background: #2c3e50 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(52, 73, 94, 0.35) !important;
+}
+#anki-race-btn:active {
+    transform: translateY(0px) !important;
+    box-shadow: 0 2px 4px rgba(52, 73, 94, 0.2) !important;
+}
+"""
+    else:
+        btn_style = """
 #anki-race-btn {
     margin-top: 10px !important;
     background: #e74c3c !important;
@@ -90,30 +129,35 @@ def on_overview_will_render_content(overview: Any, content: Any) -> None:
     transform: translateY(0px) !important;
     box-shadow: 0 2px 4px rgba(231, 76, 60, 0.2) !important;
 }
+"""
+
+    content.table += f"""
+<style>
+{btn_style}
 </style>
 <script>
-(function() {
-    function injectButton() {
+(function() {{
+    function injectButton() {{
         const studyBtn = document.querySelector("button.study") || document.querySelector("button");
-        if (studyBtn) {
+        if (studyBtn) {{
             // Avoid duplicate injection
             if (document.getElementById("anki-race-btn")) return;
             
             const raceBtn = document.createElement("button");
             raceBtn.id = "anki-race-btn";
-            raceBtn.innerText = "Gareggia";
+            raceBtn.innerText = "{btn_text}";
             
-            raceBtn.onclick = function() {
-                pycmd("anki_race_setup");
-            };
+            raceBtn.onclick = function() {{
+                pycmd("{btn_cmd}");
+            }};
             studyBtn.parentNode.insertBefore(raceBtn, studyBtn.nextSibling);
-        } else {
+        }} else {{
             // Retry if the study button isn't loaded yet
             setTimeout(injectButton, 50);
-        }
-    }
+        }}
+    }}
     injectButton();
-})();
+}})();
 </script>
 """
 
@@ -125,6 +169,32 @@ def on_js_message(handled: tuple[bool, Any], message: str, context: Any) -> tupl
             
         current_deck_id = mw.col.decks.selected()
         start_race_flow(current_deck_id)
+        return (True, None)
+def stop_active_race() -> None:
+    """Instantly cancels the active race, hiding widgets and refreshing views."""
+    race_manager.race_in_progress = False
+    race_manager.race_paused = False
+    
+    if race_bar_widget:
+        race_bar_widget.hide()
+        
+    if mw:
+        if mw.state == "overview" and getattr(mw, "overview", None):
+            mw.overview.refresh()
+        if getattr(mw, "deckBrowser", None):
+            mw.deckBrowser.refresh()
+
+def on_js_message(handled: tuple[bool, Any], message: str, context: Any) -> tuple[bool, Any]:
+    """Handles messages sent from JavaScript inside Anki's standard webviews (Overview)."""
+    if message == "anki_race_setup":
+        if not mw or not mw.col:
+            return (True, None)
+            
+        current_deck_id = mw.col.decks.selected()
+        start_race_flow(current_deck_id)
+        return (True, None)
+    elif message == "anki_race_stop":
+        stop_active_race()
         return (True, None)
         
     return handled
@@ -206,12 +276,15 @@ def on_deck_browser_will_render_content(deck_browser: Any, content: Any) -> None
         
     if race_manager.race_in_progress and race_manager.deck_id is not None:
         deck_id = race_manager.deck_id
-        # Prepend checkered flag emoji 🏁 before the deck link text in content.tree
-        pattern = rf'(<a\s+[^>]*onclick=["\']pycmd\([\'"]click:{deck_id}[\'"]\);[^"\']*["\'][^>]*>)([^<]+)(</a>)'
-        content.tree = re.sub(pattern, r'\1🏁 \2\3', content.tree)
+        # Modern Anki deck links use the onclick="return pycmd('open:deck_id')" pattern.
+        # We define separate patterns for double-quoted and single-quoted onclick attributes to avoid quotes conflicts.
+        pattern_double = rf'(<a\s+[^>]*onclick="[^"]*open:{deck_id}[^"]*"[^>]*>)([^<]+)(</a>)'
+        pattern_single = rf'(<a\s+[^>]*onclick=\'[^\']*open:{deck_id}[^\']*\'[^>]*>)([^<]+)(</a>)'
+        content.tree = re.sub(pattern_double, r'\1🏁 \2\3', content.tree)
+        content.tree = re.sub(pattern_single, r'\1🏁 \2\3', content.tree)
 
 def setup_tools_menu() -> None:
-    """Creates a sub-menu under Tools -> Anki Race with 'Inizia Gara' and 'Personalizza' options."""
+    """Creates a sub-menu under Tools -> Anki Race with options to start, stop, and customize races."""
     if not mw:
         return
     
@@ -222,8 +295,17 @@ def setup_tools_menu() -> None:
     action_start = menu.addAction("Inizia Gara")
     action_start.triggered.connect(on_menu_action)
     
+    action_stop = menu.addAction("Interrompi Gara")
+    action_stop.triggered.connect(stop_active_race)
+    
     action_config = menu.addAction("Personalizza...")
     action_config.triggered.connect(on_open_config)
+    
+    # Enable Interrompi Gara dynamically right before the menu is shown to the user
+    def update_actions_state() -> None:
+        action_stop.setEnabled(race_manager.race_in_progress)
+        
+    menu.aboutToShow.connect(update_actions_state)
     
     # Add to Tools menu
     mw.form.menuTools.addMenu(menu)
