@@ -132,6 +132,10 @@ class RaceConfigDialog(QDialog):
         self.shortcut_edit = QKeySequenceEdit()
         form_layout.addRow("Scorciatoia avvio gara:", self.shortcut_edit)
         
+        # Show active race flag in deck list
+        self.show_flag_cb = QCheckBox("Mostra icona bandierina gara nel menu mazzi")
+        form_layout.addRow("Stato Gara in Mazzi:", self.show_flag_cb)
+        
         layout.addStretch()
 
     def _setup_road_cars_tab(self) -> None:
@@ -391,6 +395,9 @@ class RaceConfigDialog(QDialog):
         shortcut_str = race_config.get("shortcut", "Ctrl+R")
         self.shortcut_edit.setKeySequence(QKeySequence(shortcut_str))
         
+        # Show active race flag in deck list
+        self.show_flag_cb.setChecked(race_config.get("show_deck_list_flag", True))
+        
         # Tab 2: Strada e Auto
         self.height_slider.setValue(race_config.get("road_height", 35))
         self.cpu_y_slider.setValue(race_config.get("car_cpu_offset_y", 2))
@@ -607,7 +614,8 @@ class RaceConfigDialog(QDialog):
             "road_style": "solid" if self.road_style_combo.currentText() == "Tinta Unita" else "image",
             "road_solid_color": self.road_solid_color_val,
             "road_image_file": self.road_image_file_val,
-            "shortcut": self.shortcut_edit.keySequence().toString()
+            "shortcut": self.shortcut_edit.keySequence().toString(),
+            "show_deck_list_flag": self.show_flag_cb.isChecked()
         }
         
         race_config.update(updates)
@@ -615,8 +623,12 @@ class RaceConfigDialog(QDialog):
         # Apply updates to active widgets in Anki if visible
         from .hooks import race_bar_widget, register_shortcut
         if race_bar_widget and race_bar_widget.isVisible():
-            race_bar_widget.setFixedHeight(updates["road_height"] + 18)
+            race_bar_widget.setFixedHeight(updates["road_height"])
             race_bar_widget.update_state()
+            
+        # Refresh the deck list tree in case show_deck_list_flag was toggled
+        if mw and getattr(mw, "deckBrowser", None):
+            mw.deckBrowser.refresh()
             
         # Re-register the shortcut in case it changed
         register_shortcut()

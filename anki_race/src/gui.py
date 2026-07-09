@@ -38,7 +38,7 @@ class RaceBarWebView(AnkiWebView):
     def __init__(self, parent: Any = None) -> None:
         super().__init__(parent)
         from .config import race_config
-        self.setFixedHeight(race_config.get("road_height", 70) + 18)
+        self.setFixedHeight(race_config.get("road_height", 35))
         self.set_bridge_command(self._handle_cmd, self)
         
         # Enable transparent background to allow confetti overlays to draw above reviewer content
@@ -47,6 +47,9 @@ class RaceBarWebView(AnkiWebView):
         
     def load_race_html(self) -> None:
         """Loads the HTML document of the race bar served by Anki's server, inlining CSS and JS to bypass Qt WebEngine blocks."""
+        from .config import race_config
+        self.setFixedHeight(race_config.get("road_height", 35))
+        
         addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         html_path = os.path.join(addon_dir, "web", "index.html")
         
@@ -189,7 +192,7 @@ class RaceBarWebView(AnkiWebView):
                 self.setFixedHeight(18) # Collapse to show only the minimize tab
             else:
                 from .config import race_config
-                self.setFixedHeight(race_config.get("road_height", 70) + 18)
+                self.setFixedHeight(race_config.get("road_height", 35))
         return None
 
     def trigger_victory_directly(self) -> None:
@@ -200,7 +203,7 @@ class RaceBarWebView(AnkiWebView):
         race_manager.race_paused = False
         self.hide() # Close the top bar immediately so it stops shifting layout
         from .config import race_config
-        self.setFixedHeight(race_config.get("road_height", 70) + 18) # Reset height to standard
+        self.setFixedHeight(race_config.get("road_height", 35)) # Reset height to standard
         
         # Inject confetti into Anki's main WebView immediately (0ms delay)
         QTimer.singleShot(0, self.inject_confetti_into_main_webview)
@@ -331,7 +334,7 @@ class RaceBarWebView(AnkiWebView):
             showInfo("🏆 Vittoria!\n\nHai battuto la CPU tagliando il traguardo per primo!", title=title)
         self.hide()
         from .config import race_config
-        self.setFixedHeight(race_config.get("road_height", 70) + 18) # Reset height to standard
+        self.setFixedHeight(race_config.get("road_height", 35)) # Reset height to standard
 
     def show_defeat_popup(self) -> None:
         """Displays the native Qt Defeat dialog popup."""

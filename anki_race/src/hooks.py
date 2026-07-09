@@ -42,6 +42,8 @@ def start_race_flow(deck_id: int) -> None:
         
         # Load assets and show the persistent race bar widget
         if race_bar_widget:
+            from .config import race_config
+            race_bar_widget.setFixedHeight(race_config.get("road_height", 35))
             race_bar_widget.load_race_html()
             race_bar_widget.show()
             
@@ -195,6 +197,19 @@ def register_shortcut() -> None:
         except Exception as e:
             print(f"[AnkiRace] Failed to register shortcut '{shortcut_str}': {e}")
 
+def on_deck_browser_will_render_content(deck_browser: Any, content: Any) -> None:
+    """Prepend a checkered flag emoji next to the active race deck in the main deck tree browser."""
+    from .config import race_config
+    import re
+    if not race_config.get("show_deck_list_flag", True):
+        return
+        
+    if race_manager.race_in_progress and race_manager.deck_id is not None:
+        deck_id = race_manager.deck_id
+        # Prepend checkered flag emoji 🏁 before the deck link text in content.tree
+        pattern = rf'(<a\s+[^>]*onclick=["\']pycmd\([\'"]click:{deck_id}[\'"]\);[^"\']*["\'][^>]*>)([^<]+)(</a>)'
+        content.tree = re.sub(pattern, r'\1🏁 \2\3', content.tree)
+
 def setup_tools_menu() -> None:
     """Creates a sub-menu under Tools -> Anki Race with 'Inizia Gara' and 'Personalizza' options."""
     if not mw:
@@ -244,3 +259,6 @@ if mw:
     
     # 7. Initialize persistent race bar widget
     init_race_bar()
+    
+    # 8. Deck browser content injection hook
+    gui_hooks.deck_browser_will_render_content.append(on_deck_browser_will_render_content)

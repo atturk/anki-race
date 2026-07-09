@@ -24,7 +24,7 @@
             // 2. Road height
             road.style.height = `${state.road_height}px`;
             const track = document.querySelector(".race-track-container");
-            if (track) track.style.height = `${state.road_height + 2}px`;
+            if (track) track.style.height = `${state.road_height}px`;
         }
 
         // 3. Car offsets and flips
