@@ -33,8 +33,8 @@ class RaceConfigDialog(QDialog):
     def __init__(self, parent: Any = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Personalizza Anki Race")
-        self.resize(550, 650)
-        self.setMinimumSize(500, 600)
+        self.resize(650, 650)
+        self.setMinimumSize(600, 600)
         
         self.car_cpu_file_val = race_config.get("car_cpu_file", "")
         self.car_user_file_val = race_config.get("car_user_file", "")
@@ -58,10 +58,12 @@ class RaceConfigDialog(QDialog):
         # 1. Preview Area (At the top of the dialog, visible across all custom edits)
         preview_box = QGroupBox("Anteprima Tracciato (Real-time)")
         preview_layout = QVBoxLayout()
+        preview_layout.setContentsMargins(5, 5, 5, 5)
+        preview_layout.setSpacing(0)
         preview_box.setLayout(preview_layout)
         
         self.preview_webview = AnkiWebView(self)
-        self.preview_webview.setFixedHeight(110)
+        self.preview_webview.setFixedHeight(70)
         self.preview_webview.setStyleSheet("background: transparent;")
         self.preview_webview.page().setBackgroundColor(QColor(0, 0, 0, 0))
         preview_layout.addWidget(self.preview_webview)
@@ -108,11 +110,8 @@ class RaceConfigDialog(QDialog):
         layout.addLayout(form_layout)
         
         # Show overview button
-        from aqt.qt import QLabel
-        overview_label = QLabel("Mostra il bottone 'Gareggia' / 'Interrompi Gara' nella schermata del mazzo:")
-        overview_label.setWordWrap(True)
-        self.overview_btn_cb = QCheckBox()
-        form_layout.addRow(overview_label, self.overview_btn_cb)
+        self.overview_btn_cb = QCheckBox("Mostra il bottone 'Gareggia' / 'Interrompi Gara' nella schermata del mazzo")
+        form_layout.addRow("Integrazione UI:", self.overview_btn_cb)
         
         # Default game mode
         self.default_mode_combo = QComboBox()
@@ -136,10 +135,8 @@ class RaceConfigDialog(QDialog):
         form_layout.addRow("Scorciatoia avvio gara:", self.shortcut_edit)
         
         # Show active race flag in deck list
-        flag_label = QLabel("Mostra icona bandierina gara nel menu mazzi:")
-        flag_label.setWordWrap(True)
-        self.show_flag_cb = QCheckBox()
-        form_layout.addRow(flag_label, self.show_flag_cb)
+        self.show_flag_cb = QCheckBox("Mostra icona bandierina gara nel menu mazzi")
+        form_layout.addRow("Stato Gara in Mazzi:", self.show_flag_cb)
         
         layout.addStretch()
 
@@ -211,9 +208,9 @@ class RaceConfigDialog(QDialog):
         cars_pos_layout = QFormLayout()
         cars_pos_box.setLayout(cars_pos_layout)
         
-        # Offset CPU (range -20 to 70)
+        # Offset CPU (range -20 to 50)
         self.cpu_y_slider = QSlider(Qt.Orientation.Horizontal)
-        self.cpu_y_slider.setRange(-20, 70)
+        self.cpu_y_slider.setRange(-20, 50)
         self.cpu_y_label = QLabel("2 px")
         self.cpu_y_slider.valueChanged.connect(lambda v: self.cpu_y_label.setText(f"{v} px"))
         
@@ -222,9 +219,9 @@ class RaceConfigDialog(QDialog):
         cpu_y_widget.addWidget(self.cpu_y_label)
         cars_pos_layout.addRow("Offset CPU (Inseguitore):", cpu_y_widget)
         
-        # Offset User (range -20 to 70)
+        # Offset User (range -20 to 50)
         self.user_y_slider = QSlider(Qt.Orientation.Horizontal)
-        self.user_y_slider.setRange(-20, 70)
+        self.user_y_slider.setRange(-20, 50)
         self.user_y_label = QLabel("18 px")
         self.user_y_slider.valueChanged.connect(lambda v: self.user_y_label.setText(f"{v} px"))
         
@@ -631,9 +628,12 @@ class RaceConfigDialog(QDialog):
             race_bar_widget.setFixedHeight(updates["road_height"])
             race_bar_widget.update_state()
             
-        # Refresh the deck list tree in case show_deck_list_flag was toggled
-        if mw and getattr(mw, "deckBrowser", None):
-            mw.deckBrowser.refresh()
+        # Refresh the active view to reflect settings changes instantly
+        if mw:
+            if mw.state == "deckBrowser" and getattr(mw, "deckBrowser", None):
+                mw.deckBrowser.refresh()
+            elif mw.state == "overview" and getattr(mw, "overview", None):
+                mw.overview.refresh()
             
         # Re-register the shortcut in case it changed
         register_shortcut()
