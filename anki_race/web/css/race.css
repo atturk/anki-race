@@ -77,9 +77,6 @@ html, body {
     box-sizing: border-box;
 }
 
-.minimized .race-track-container {
-    display: none !important;
-}
 
 .race-road {
     position: relative;
@@ -99,45 +96,65 @@ html, body {
     to { background-position-x: -175px; } /* matches SVG tile width */
 }
 
-/* Checkered Finish Line */
-.finish-line {
+
+
+/* Decorations container (Road Overlays) */
+.decorations-container {
     position: absolute;
-    right: 30px;
-    top: 0;
-    width: 12px;
-    height: 100%;
-    background: 
-        linear-gradient(45deg, #111 25%, transparent 25%), 
-        linear-gradient(-45deg, #111 25%, transparent 25%), 
-        linear-gradient(45deg, transparent 75%, #111 75%), 
-        linear-gradient(-45deg, transparent 75%, #111 75%);
-    background-size: 6px 6px;
-    background-color: #eee;
-    box-shadow: 0 0 4px rgba(0,0,0,0.5);
-    z-index: 1;
+    width: 100%;
+    pointer-events: none;
+    z-index: 4; /* Behind cars (9, 10) but in front of road strip (1) */
+    transform: translateY(-50%);
+    transform-origin: center center;
+}
+
+.decor-marquee {
+    display: flex;
+    width: max-content;
+    white-space: nowrap;
+}
+
+.decor-group {
+    display: flex;
+    align-items: center;
+}
+
+.decor-item {
+    display: inline-block;
+    flex-shrink: 0;
+    line-height: 1;
+    vertical-align: middle;
+    transform-origin: center center;
+}
+
+.decor-marquee.animating {
+    animation: scrollDecor var(--decor-duration, 5s) linear infinite;
+}
+
+@keyframes scrollDecor {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
 }
 
 /* Car styling */
 .car-wrapper {
     position: absolute;
-    width: 50px;
-    height: 24px;
+    transform: translateY(-50%);
+    transform-origin: center center;
     transition: left 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
-    z-index: 2;
 }
 
 #car-cpu-wrapper {
-    top: 6px;
+    z-index: 9;
 }
 
 #car-user-wrapper {
-    top: 36px;
+    z-index: 10;
 }
 
 .car-img {
-    height: 24px;
-    width: auto;
-    max-width: 50px;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
     display: inline-block;
     vertical-align: middle;
@@ -165,44 +182,6 @@ html, body {
     background-color: #e74c3c;
 }
 
-.minimize-tab {
-    position: absolute;
-    bottom: 2px;
-    right: 20px;
-    width: 36px;
-    height: 14px;
-    background-color: rgba(47, 54, 64, 0.7);
-    border-radius: 3px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    z-index: 999;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    transition: background-color 0.2s, bottom 0.2s;
-}
-
-.minimize-tab:hover {
-    background-color: rgba(47, 54, 64, 1.0);
-}
-
-.minimized .minimize-tab {
-    bottom: 2px;
-    background-color: #2f3640;
-}
-
-.minimize-arrow {
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-bottom: 5px solid #f5f6fa;
-    transition: transform 0.2s ease;
-}
-
-.minimized .minimize-arrow {
-    transform: rotate(180deg);
-}
 
 /* Confetti Particle styling */
 .confetti-particle {
@@ -229,4 +208,31 @@ html, body {
     width: 100%;
     height: 100%;
     text-align: center;
+}
+
+/* Pause animations classes */
+.decor-marquee.paused,
+.race-road.paused {
+    animation-play-state: paused !important;
+}
+
+/* Nitro Boost Styling */
+.nitro-fire {
+    position: absolute;
+    left: -65%;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    font-size: 0.9em;
+    pointer-events: none;
+    z-index: 8;
+}
+
+.nitro-blink {
+    animation: nitroFlash 0.1s linear infinite;
+}
+
+@keyframes nitroFlash {
+    0% { opacity: 1; }
+    50% { opacity: 0.15; }
+    100% { opacity: 1; }
 }

@@ -10,8 +10,15 @@
         <div class="race-track-container">
             <div class="race-road" id="race-road-strip">
                 <!-- Lanes and markings (CSS handled) -->
-                <div class="finish-line"></div>
                 
+                <!-- Infinite loop decorations layer -->
+                <div class="decorations-container" id="race-decorations" style="display: none;">
+                    <div class="decor-marquee" id="decor-marquee">
+                        <div class="decor-group" id="decor-group-1"></div>
+                        <div class="decor-group" id="decor-group-2"></div>
+                    </div>
+                </div>
+
                 <!-- CPU Car -->
                 <div class="car-wrapper" id="car-cpu-wrapper" style="left: 0%;">
                     <img class="car-img" id="car-cpu-img" src="" alt="CPU" style="display: none;" />
@@ -22,13 +29,9 @@
                 <div class="car-wrapper" id="car-user-wrapper" style="left: 0%;">
                     <img class="car-img" id="car-user-img" src="" alt="USER" style="display: none;" />
                     <span class="car-emoji" id="car-user-emoji" style="display: none;"></span>
+                    <span class="nitro-fire" id="nitro-fire" style="display: none;">🔥</span>
                 </div>
             </div>
-        </div>
-        
-        <!-- Minimize Tab (arrow starts pointing up) -->
-        <div class="minimize-tab" id="minimize-tab">
-            <div class="minimize-arrow"></div>
         </div>
     </div>
 

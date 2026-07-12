@@ -25,14 +25,18 @@ def start_race_flow(deck_id: int) -> None:
     if not mw or not mw.col:
         return
         
-    due_count = race_manager._get_due_card_count(deck_id)
+    if mw and mw.col:
+        mw.col.decks.select(deck_id)
+        due_count = sum(mw.col.sched.counts())
+    else:
+        due_count = race_manager._get_due_card_count(deck_id)
     if due_count == 0:
-        showInfo("Non ci sono carte da studiare in questo mazzo!")
+        showInfo("There are no cards to study in this deck!")
         return
         
     # Get deck name
     deck = mw.col.decks.get(deck_id)
-    deck_name = deck.get("name", "Mazzo Sconosciuto")
+    deck_name = deck.get("name", "Unknown Deck")
     
     # Open the setup dialog modal
     dialog = RaceSetupDialog(mw, deck_name, due_count)
@@ -70,7 +74,7 @@ def on_overview_will_render_content(overview: Any, content: Any) -> None:
         and race_manager.deck_id == current_deck_id
     )
     
-    btn_text = "Interrompi Gara" if is_active_race else "Gareggia"
+    btn_text = "Stop Race" if is_active_race else "Race!"
     btn_cmd = "anki_race_stop" if is_active_race else "anki_race_setup"
     
     # Red styling for Gareggia, dark slate styling for Interrompi Gara
@@ -204,6 +208,24 @@ def on_card_answered(reviewer: Any, card: Any, ease: int) -> None:
     if race_manager.race_in_progress:
         # Ease: 1=Again (incorrect), 2=Hard, 3=Good, 4=Easy (correct)
         correct = ease > 1
+        
+        # Determine if it is Good or Easy
+        # By default, for 4 buttons: 3=Good, 4=Easy (so ease >= 3)
+        # For 3 buttons: 2=Good, 3=Easy (so ease >= 2)
+        # For 2 buttons: 2=Good (so ease >= 2)
+        num_buttons = 4
+        if mw and mw.col and card:
+            try:
+                num_buttons = mw.col.sched.answerButtons(card)
+            except Exception:
+                pass
+                
+        if num_buttons == 4:
+            is_good_easy = (ease >= 3)
+        else:
+            is_good_easy = (ease >= 2)
+            
+        race_manager.update_streak(is_good_easy, is_undo=False)
         race_manager.on_card_answered(correct)
         
         # Check if victory achieved directly in Python to prevent timing conflicts
@@ -215,11 +237,39 @@ def on_card_answered(reviewer: Any, card: Any, ease: int) -> None:
         # Push updated positions to our persistent top widget Webview
         if race_bar_widget:
             race_bar_widget.update_state()
+
+def on_reviewer_show_question(card: Any) -> None:
+    """Triggered when a new card is shown. Syncs the scheduler counts."""
+    if race_manager.race_in_progress and mw and mw.col:
+        try:
+            remaining = sum(mw.col.sched.counts())
+            is_undo = getattr(race_manager, "just_did_undo", False)
+            race_manager.just_did_undo = False
             
-        # Print status to debug console for validation
-        print(f"[AnkiRace] Card answered (correct={correct}). "
-              f"Remaining cards: {race_manager.remaining_cards}/{race_manager.total_cards}. "
-              f"Positions: User {race_manager.user_position:.1f}% vs CPU {race_manager.cpu_position:.1f}%")
+            race_manager.update_remaining(remaining, is_undo=is_undo)
+            
+            if race_manager.remaining_cards <= 0:
+                if race_bar_widget:
+                    race_bar_widget.trigger_victory_directly()
+                return
+                
+            if race_bar_widget:
+                race_bar_widget.update_state()
+        except Exception as e:
+            print(f"[AnkiRace] Error in on_reviewer_show_question: {e}")
+
+def on_state_did_undo(changes: Any) -> None:
+    """Triggered when Anki successfully performs an undo action."""
+    if race_manager.race_in_progress and mw and mw.col:
+        try:
+            remaining = sum(mw.col.sched.counts())
+            race_manager.just_did_undo = True
+            race_manager.update_streak(False, is_undo=True)
+            race_manager.update_remaining(remaining, is_undo=True)
+            if race_bar_widget:
+                race_bar_widget.update_state()
+        except Exception as e:
+            print(f"[AnkiRace] Error in on_state_did_undo: {e}")
 
 def on_state_did_change(new_state: str, old_state: str) -> None:
     """Ensures that the persistent race bar widget is paused/resumed and shown/hidden based on state."""
@@ -229,20 +279,35 @@ def on_state_did_change(new_state: str, old_state: str) -> None:
             if current_deck_id == race_manager.deck_id:
                 if race_manager.race_paused:
                     race_manager.resume_race()
-                    if race_bar_widget:
-                        race_bar_widget.update_state()
-                        race_bar_widget.show()
+                if race_bar_widget:
+                    race_bar_widget.update_state()
+                    race_bar_widget.show()
             else:
                 # User switched to a different deck, abort the old race
-                race_manager.race_in_progress = False
-                race_manager.race_paused = False
-                if race_bar_widget:
-                    race_bar_widget.hide()
+                stop_active_race()
     else: # new_state != "review"
         if race_bar_widget:
             race_bar_widget.hide()
-        if race_manager.race_in_progress and not race_manager.race_paused:
-            race_manager.pause_race()
+            
+        if race_manager.race_in_progress:
+            if mw and mw.col:
+                try:
+                    remaining = sum(mw.col.sched.counts())
+                    if remaining <= 0:
+                        race_manager.update_remaining(0, is_undo=False)
+                        if race_bar_widget:
+                            race_bar_widget.trigger_victory_directly()
+                        return
+                except Exception as e:
+                    print(f"[AnkiRace] Error checking remaining count on state change: {e}")
+            
+            from .config import race_config
+            action = race_config.get("deck_leave_action", "pause")
+            if action == "interrupt":
+                stop_active_race()
+            elif action == "pause":
+                if not race_manager.race_paused:
+                    race_manager.pause_race()
 
 shortcut_instance: Optional[QShortcut] = None
 
@@ -292,13 +357,13 @@ def setup_tools_menu() -> None:
     menu = QMenu("Anki Race", mw.form.menuTools)
     
     # Add actions
-    action_start = menu.addAction("Inizia Gara")
+    action_start = menu.addAction("Start Race")
     action_start.triggered.connect(on_menu_action)
     
-    action_stop = menu.addAction("Interrompi Gara")
+    action_stop = menu.addAction("Stop Race")
     action_stop.triggered.connect(stop_active_race)
     
-    action_config = menu.addAction("Personalizza...")
+    action_config = menu.addAction("Customize...")
     action_config.triggered.connect(on_open_config)
     
     # Enable Interrompi Gara dynamically right before the menu is shown to the user
@@ -344,3 +409,11 @@ if mw:
     
     # 8. Deck browser content injection hook
     gui_hooks.deck_browser_will_render_content.append(on_deck_browser_will_render_content)
+    
+    # 9. Reviewer show question hook
+    if hasattr(gui_hooks, "reviewer_did_show_question"):
+        gui_hooks.reviewer_did_show_question.append(on_reviewer_show_question)
+        
+    # 10. Undo hooks
+    if hasattr(gui_hooks, "state_did_undo"):
+        gui_hooks.state_did_undo.append(on_state_did_undo)

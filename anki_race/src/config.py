@@ -25,7 +25,25 @@ DEFAULT_CONFIG = {
     "road_solid_color": "#1e272e",
     "road_image_file": "",
     "shortcut": "Ctrl+R",
-    "show_deck_list_flag": True
+    "show_deck_list_flag": True,
+    "car_cpu_size": 32,
+    "car_user_size": 32,
+    "decor_enabled": False,
+    "decor_type": "emoji",
+    "decor_emoji": "🌲   🏠   🌲",
+    "decor_image_file": "",
+    "decor_y": 10,
+    "decor_size": 24,
+    "decor_replicate": True,
+    "decor_spacer": 100,
+    "decor_x": 50,
+    "decor_scrolling": True,
+    "decor_speed": 2,
+    "show_victory_popup": True,
+    "show_defeat_popup": True,
+    "deck_leave_action": "pause",
+    "nitro_enabled": False,
+    "nitro_cards": 5
 }
 
 class AnkiRaceConfig:
