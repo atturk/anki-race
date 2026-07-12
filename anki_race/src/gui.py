@@ -153,9 +153,9 @@ class RaceEndDialog(QDialog):
             
             donation_html = (
                 f"{donation_phrase} "
-                f"<a href='https://buymeacoffee.com'><img src='file:///{bmac_path}' width='16' height='16' style='vertical-align: baseline; margin: 0 2px;' /></a> "
-                f"<a href='https://it.tipeee.com'><img src='file:///{tipeee_path}' width='16' height='16' style='vertical-align: baseline; margin: 0 2px;' /></a> "
-                f"<a href='https://ko-fi.com'><img src='file:///{kofi_path}' width='16' height='16' style='vertical-align: baseline; margin: 0 2px;' /></a>"
+                f"<a href='https://buymeacoffee.com/hhrhrdbr6ys'><img src='file:///{bmac_path}' width='16' height='16' style='vertical-align: baseline; margin: 0 2px;' /></a> "
+                f"<a href='https://it.tipeee.com/ankilius/'><img src='file:///{tipeee_path}' width='16' height='16' style='vertical-align: baseline; margin: 0 2px;' /></a> "
+                f"<a href='https://ko-fi.com/ankilius'><img src='file:///{kofi_path}' width='16' height='16' style='vertical-align: baseline; margin: 0 2px;' /></a>"
             )
             
             link_html = f"<a href='https://ankiweb.net/shared/info/anki-race-placeholder'>vote on AnkiWeb</a>"
@@ -277,22 +277,32 @@ class RaceBarWebView(AnkiWebView):
         road_image_name = race_config.get("road_image_file", "")
         if road_image_name:
             addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+            server_url = get_url() if get_url else "http://127.0.0.1/"
+            
             user_path = os.path.join(addon_dir, "user_files", road_image_name)
             if os.path.exists(user_path):
-                get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
-                server_url = get_url() if get_url else "http://127.0.0.1/"
                 road_texture_url = f"{server_url}_addons/{addon_package}/user_files/{road_image_name}"
+            else:
+                assets_path = os.path.join(addon_dir, "web", "assets", road_image_name)
+                if os.path.exists(assets_path):
+                    road_texture_url = f"{server_url}_addons/{addon_package}/web/assets/{road_image_name}"
         
         # Resolve custom decoration texture image file
         decor_texture_url = ""
         decor_image_name = race_config.get("decor_image_file", "")
         if decor_image_name:
             addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+            server_url = get_url() if get_url else "http://127.0.0.1/"
+            
             user_path = os.path.join(addon_dir, "user_files", decor_image_name)
             if os.path.exists(user_path):
-                get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
-                server_url = get_url() if get_url else "http://127.0.0.1/"
                 decor_texture_url = f"{server_url}_addons/{addon_package}/user_files/{decor_image_name}"
+            else:
+                assets_path = os.path.join(addon_dir, "web", "assets", decor_image_name)
+                if os.path.exists(assets_path):
+                    decor_texture_url = f"{server_url}_addons/{addon_package}/web/assets/{decor_image_name}"
 
         return {
             "user_position": race_manager.user_position,
@@ -549,11 +559,11 @@ class RaceSetupDialog(QDialog):
         from .config import race_config
         default_mode = race_config.get("default_mode", "normale")
         
-        self.btn_normal = QRadioButton("Normal Mode (Standard Race)")
+        self.btn_normal = QRadioButton("Normal Mode")
         self.btn_normal.setToolTip("The CPU advances at a constant speed. Finish the deck before being beaten.")
         layout.addWidget(self.btn_normal)
         
-        self.btn_escape = QRadioButton("Escape Mode (Pursuit)")
+        self.btn_escape = QRadioButton("Escape Mode")
         self.btn_escape.setToolTip("The CPU chases you. Escape by completing the whole deck before being caught!")
         layout.addWidget(self.btn_escape)
         
@@ -591,7 +601,7 @@ class RaceSetupDialog(QDialog):
         layout.addLayout(self.advantage_layout)
         
         # Time Selection Header
-        time_header = QLabel("<b>Race Duration (CPU limit):</b>")
+        time_header = QLabel("<b>Race Duration (Opponent speed):</b>")
         time_header.setStyleSheet("font-size: 12px; margin-top: 5px;")
         layout.addWidget(time_header)
         

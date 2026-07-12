@@ -19,10 +19,4 @@ Anki Race is a gamification add-on for Anki that turns your reviews into an exci
 1. Copy the addon files to your Anki addons directory or search for Anki Race on AnkiWeb.
 2. Restart Anki.
 
-## Development
 
-To set up a local link to your Anki addons folder, run:
-```bash
-./setup_dev.sh
-```
-This creates a symbolic link so you can live-reload changes inside Anki.

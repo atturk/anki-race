@@ -134,9 +134,9 @@ class RaceConfigDialog(QDialog):
         donation_html = (
             f"<div>"
             f"{donation_phrase} "
-            f"<a href='https://buymeacoffee.com'><img src='file:///{bmac_path}' width='{BOTTOM_SUPPORT_ICON_SIZE}' height='{BOTTOM_SUPPORT_ICON_SIZE}' style='vertical-align: baseline; margin: 0 5px;' /></a> "
-            f"<a href='https://it.tipeee.com'><img src='file:///{tipeee_path}' width='{BOTTOM_SUPPORT_ICON_SIZE}' height='{BOTTOM_SUPPORT_ICON_SIZE}' style='vertical-align: baseline; margin: 0 5px;' /></a> "
-            f"<a href='https://ko-fi.com'><img src='file:///{kofi_path}' width='{BOTTOM_SUPPORT_ICON_SIZE}' height='{BOTTOM_SUPPORT_ICON_SIZE}' style='vertical-align: baseline; margin: 0 5px;' /></a>"
+            f"<a href='https://buymeacoffee.com/hhrhrdbr6ys'><img src='file:///{bmac_path}' width='{BOTTOM_SUPPORT_ICON_SIZE}' height='{BOTTOM_SUPPORT_ICON_SIZE}' style='vertical-align: baseline; margin: 0 5px;' /></a> "
+            f"<a href='https://it.tipeee.com/ankilius/'><img src='file:///{tipeee_path}' width='{BOTTOM_SUPPORT_ICON_SIZE}' height='{BOTTOM_SUPPORT_ICON_SIZE}' style='vertical-align: baseline; margin: 0 5px;' /></a> "
+            f"<a href='https://ko-fi.com/ankilius'><img src='file:///{kofi_path}' width='{BOTTOM_SUPPORT_ICON_SIZE}' height='{BOTTOM_SUPPORT_ICON_SIZE}' style='vertical-align: baseline; margin: 0 5px;' /></a>"
             f"</div>"
         )
         
@@ -872,22 +872,32 @@ class RaceConfigDialog(QDialog):
         road_image_name = self.road_image_file_val
         if road_image_name:
             addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+            server_url = get_url() if get_url else "http://127.0.0.1/"
+            
             user_path = os.path.join(addon_dir, "user_files", road_image_name)
             if os.path.exists(user_path):
-                get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
-                server_url = get_url() if get_url else "http://127.0.0.1/"
                 road_texture_url = f"{server_url}_addons/{addon_package}/user_files/{road_image_name}"
+            else:
+                assets_path = os.path.join(addon_dir, "web", "assets", road_image_name)
+                if os.path.exists(assets_path):
+                    road_texture_url = f"{server_url}_addons/{addon_package}/web/assets/{road_image_name}"
 
         # Resolve custom decoration texture image file
         decor_texture_url = ""
         decor_image_name = self.decor_image_file_val
         if decor_image_name:
             addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
+            server_url = get_url() if get_url else "http://127.0.0.1/"
+            
             user_path = os.path.join(addon_dir, "user_files", decor_image_name)
             if os.path.exists(user_path):
-                get_url = getattr(mw, "serverURL", getattr(mw, "server_url", None))
-                server_url = get_url() if get_url else "http://127.0.0.1/"
                 decor_texture_url = f"{server_url}_addons/{addon_package}/user_files/{decor_image_name}"
+            else:
+                assets_path = os.path.join(addon_dir, "web", "assets", decor_image_name)
+                if os.path.exists(assets_path):
+                    decor_texture_url = f"{server_url}_addons/{addon_package}/web/assets/{decor_image_name}"
 
         return {
             "user_position": 60.0,

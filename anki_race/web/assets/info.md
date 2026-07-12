@@ -1,36 +1,27 @@
 # 🏁 Anki Race
 
-Gamify your daily study by turning your Anki review sessions into a real-time car race!
+Turn your Anki review into a race against time!
 
 ---
 
 ### 🚗 How to Play
-- **Start the Race:** Open a deck and click the **Race** button (or use the configured keyboard shortcut).
-- **Answer Cards:** Answering correctly (*Good* or *Easy*) speeds up your car. Incorrect (*Again*) or difficult (*Hard*) ratings slow you down.
-- **Race Mode:** Win by crossing the finish line (right edge) before the timer runs out.
-- **Escape Mode:** The CPU starts with a headstart. Win by catching up and overtaking it before the finish line!
+- **Start the Race:** Select a deck with at least one card, then go to **Tools -> Anki Race -> Start Race**. You can also configure a custom keyboard shortcut in the settings or enable a shortcut button to appear on the deck overview screen.
+- **Answer Cards:** Every card you answer (whether rated *Again*, *Hard*, *Good*, or *Easy*) moves your car forward along the track.
+- **Race Mode:** Cross the finish line (right edge) before the timer runs out to win.
+- **Escape Mode:** You start the race with a distance advantage (head start) and a pursuer chases you. Win by completing all reviews in the deck before the pursuer catches up to you!
 
 ---
 
 ### ⚙️ Advanced Customization
-In the **Graphics** tab, you can customize every visual detail:
-- Choose between a **Solid Color** or an **Image Texture** for the road.
-- Upload custom images (including **animated GIF files**) for the vehicles and backgrounds.
-- Enable background scrolling/movement and set custom spacing options for seamless textures.
-
----
-
-### 📝 Changelog v1.0.0
-- **[NEW]** Nested horizontal tabs design for graphics and layout configuration.
-- **[NEW]** Native support for animated GIFs for vehicles and backgrounds.
-- **[NEW]** Promotional "Extra Textures" tab at the bottom.
-- **[NEW]** Detailed post-race statistics dialog (duration, cards count, avg seconds).
-- **[FIX]** Thread-safe timer locks to prevent duplicate game over popups.
+In the customization dialog, you can fully personalize your racing experience:
+- **General Layout:** Adjust the overall height of the top race bar in the reviewer.
+- **Vehicles:** Choose an emoji or upload a custom image (including **animated GIFs**) for both your car and the opponent's car, and adjust their sizes and vertical positions.
+- **Background Styling:** Set a solid color background or upload a texture image that tiles and scrolls infinitely at your chosen speed.
+- **Nitro Boost:** Enable a nitrous flame effect behind your vehicle that activates after a specific streak of correct reviews (*Good* or *Easy*) and stays active as long as you maintain the streak.
+- **Advanced Road:** Customize the road track by placing a road tile image or emoji. Choose between a single fixed element or a looping pattern with custom spacing, and toggle scrolling speed to create a dynamically moving animated road (enabled by default).
 
 ---
 
 ### 📌 Upcoming Features (TODO)
-- retro 8-bit sound effects.
-- Combo multiplier / Nitro boost for consecutive correct answers.
 - Saved Personal Best (PB) records for each deck.
 - Ghost car to race against your previous record times.
