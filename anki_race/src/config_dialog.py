@@ -140,7 +140,7 @@ class RaceConfigDialog(QDialog):
             f"</div>"
         )
         
-        link_html = f"<a href='https://ankiweb.net/shared/info/anki-race-placeholder'>rate it on AnkiWeb</a>"
+        link_html = f"<a href='https://ankiweb.net/shared/info/77245971?cb=1783904479430'>rate it on AnkiWeb</a>"
         rating_html = rating_phrase.format(link=link_html)
         
         combined_html = (
