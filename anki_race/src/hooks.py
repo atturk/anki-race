@@ -10,9 +10,24 @@ addon_package = __name__.split('.')[0]
 # Global reference to the persistent race bar widget
 race_bar_widget: Optional[RaceBarWebView] = None
 
+def is_widget_valid() -> bool:
+    """Checks if the global race bar widget is instantiated and not deleted by C++."""
+    global race_bar_widget
+    if not race_bar_widget:
+        return False
+    from aqt.qt import sip
+    if sip.isdeleted(race_bar_widget):
+        race_bar_widget = None
+        return False
+    return True
+
 def init_race_bar() -> None:
     """Instantiates the persistent race bar webview and inserts it at the top of Anki's window layout."""
     global race_bar_widget
+    from aqt.qt import sip
+    if race_bar_widget and sip.isdeleted(race_bar_widget):
+        race_bar_widget = None
+        
     if not race_bar_widget and mw:
         race_bar_widget = RaceBarWebView(mw)
         # Index 0 places it at the absolute top, above deck list / reviewer contents
@@ -45,7 +60,7 @@ def start_race_flow(deck_id: int) -> None:
         race_manager.start_race(deck_id, settings)
         
         # Load assets and show the persistent race bar widget
-        if race_bar_widget:
+        if is_widget_valid():
             from .config import race_config
             race_bar_widget.setFixedHeight(race_config.get("road_height", 35))
             race_bar_widget.load_race_html()
@@ -179,7 +194,7 @@ def stop_active_race() -> None:
     race_manager.race_in_progress = False
     race_manager.race_paused = False
     
-    if race_bar_widget:
+    if is_widget_valid():
         race_bar_widget.hide()
         
     if mw:
@@ -230,12 +245,12 @@ def on_card_answered(reviewer: Any, card: Any, ease: int) -> None:
         
         # Check if victory achieved directly in Python to prevent timing conflicts
         if race_manager.remaining_cards <= 0:
-            if race_bar_widget:
+            if is_widget_valid():
                 race_bar_widget.trigger_victory_directly()
             return
         
         # Push updated positions to our persistent top widget Webview
-        if race_bar_widget:
+        if is_widget_valid():
             race_bar_widget.update_state()
 
 def on_reviewer_show_question(card: Any) -> None:
@@ -249,11 +264,11 @@ def on_reviewer_show_question(card: Any) -> None:
             race_manager.update_remaining(remaining, is_undo=is_undo)
             
             if race_manager.remaining_cards <= 0:
-                if race_bar_widget:
+                if is_widget_valid():
                     race_bar_widget.trigger_victory_directly()
                 return
                 
-            if race_bar_widget:
+            if is_widget_valid():
                 race_bar_widget.update_state()
         except Exception as e:
             print(f"[AnkiRace] Error in on_reviewer_show_question: {e}")
@@ -266,7 +281,7 @@ def on_state_did_undo(changes: Any) -> None:
             race_manager.just_did_undo = True
             race_manager.update_streak(False, is_undo=True)
             race_manager.update_remaining(remaining, is_undo=True)
-            if race_bar_widget:
+            if is_widget_valid():
                 race_bar_widget.update_state()
         except Exception as e:
             print(f"[AnkiRace] Error in on_state_did_undo: {e}")
@@ -279,14 +294,14 @@ def on_state_did_change(new_state: str, old_state: str) -> None:
             if current_deck_id == race_manager.deck_id:
                 if race_manager.race_paused:
                     race_manager.resume_race()
-                if race_bar_widget:
+                if is_widget_valid():
                     race_bar_widget.update_state()
                     race_bar_widget.show()
             else:
                 # User switched to a different deck, abort the old race
                 stop_active_race()
     else: # new_state != "review"
-        if race_bar_widget:
+        if is_widget_valid():
             race_bar_widget.hide()
             
         if race_manager.race_in_progress:
@@ -295,7 +310,7 @@ def on_state_did_change(new_state: str, old_state: str) -> None:
                     remaining = sum(mw.col.sched.counts())
                     if remaining <= 0:
                         race_manager.update_remaining(0, is_undo=False)
-                        if race_bar_widget:
+                        if is_widget_valid():
                             race_bar_widget.trigger_victory_directly()
                         return
                 except Exception as e:

@@ -190,6 +190,15 @@ class RaceBarWebView(AnkiWebView):
         # Enable transparent background to allow confetti overlays to draw above reviewer content
         self.setStyleSheet("background: transparent;")
         self.page().setBackgroundColor(QColor(0, 0, 0, 0))
+        self.destroyed.connect(self.on_widget_destroyed)
+        
+    def on_widget_destroyed(self) -> None:
+        """Removes the webview from Anki's theme did change hooks when destroyed to prevent runtime errors."""
+        try:
+            from aqt import gui_hooks
+            gui_hooks.theme_did_change.remove(self.on_theme_did_change)
+        except Exception:
+            pass
         
     def load_race_html(self) -> None:
         """Loads the HTML document of the race bar served by Anki's server, inlining CSS and JS to bypass Qt WebEngine blocks."""
