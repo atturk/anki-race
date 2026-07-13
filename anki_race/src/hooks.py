@@ -354,7 +354,7 @@ def setup_tools_menu() -> None:
         return
     
     # Create the sub-menu under tools
-    menu = QMenu("Anki Race", mw.form.menuTools)
+    menu = QMenu("🚙 Anki Race", mw.form.menuTools)
     
     # Add actions
     action_start = menu.addAction("Start Race")
