@@ -43,7 +43,8 @@ DEFAULT_CONFIG = {
     "show_deck_list_flag": True,
     "show_defeat_popup": True,
     "show_overview_button": False,
-    "show_victory_popup": True
+    "show_victory_popup": True,
+    "show_support_in_victory_popup": True
 }
 
 class AnkiRaceConfig:

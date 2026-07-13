@@ -132,8 +132,9 @@ class RaceEndDialog(QDialog):
         stats_layout.addRow("Average time per card:", avg_lbl)
         layout.addWidget(stats_group)
         
-        # 3. Support/Donation sections (Only if Victory!)
-        if is_victory:
+        # 3. Support/Donation sections (Only if Victory and enabled in settings!)
+        from .config import race_config
+        if is_victory and race_config.get("show_support_in_victory_popup", True):
             addon_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             assets_dir = os.path.join(addon_dir, "web", "assets")
             bmac_path = os.path.join(assets_dir, "buymeacoffee.svg")

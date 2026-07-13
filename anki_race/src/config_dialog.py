@@ -249,6 +249,14 @@ class RaceConfigDialog(QDialog):
         self.show_victory_popup_cb = QCheckBox("Show victory popup and trigger confetti at the finish line")
         form_layout.addRow(self.show_victory_popup_cb)
         
+        # Show support links in victory popup option
+        self.show_support_in_victory_popup_cb = QCheckBox("Show donation and voting links in the victory popup")
+        self.show_support_in_victory_popup_cb.setStyleSheet("margin-left: 20px;")
+        form_layout.addRow(self.show_support_in_victory_popup_cb)
+        
+        # Connect victory popup checkbox to toggle support links checkbox
+        self.show_victory_popup_cb.toggled.connect(self.show_support_in_victory_popup_cb.setEnabled)
+        
         # Show defeat popup option
         self.show_defeat_popup_cb = QCheckBox("Show defeat popup when the CPU crosses the finish line first")
         form_layout.addRow(self.show_defeat_popup_cb)
@@ -724,6 +732,8 @@ class RaceConfigDialog(QDialog):
         self.show_flag_cb.setChecked(race_config.get("show_deck_list_flag", True))
         
         self.show_victory_popup_cb.setChecked(race_config.get("show_victory_popup", True))
+        self.show_support_in_victory_popup_cb.setChecked(race_config.get("show_support_in_victory_popup", True))
+        self.show_support_in_victory_popup_cb.setEnabled(self.show_victory_popup_cb.isChecked())
         self.show_defeat_popup_cb.setChecked(race_config.get("show_defeat_popup", True))
         
         # Tab 2: Strada e Auto
@@ -1023,6 +1033,7 @@ class RaceConfigDialog(QDialog):
             "shortcut": self.shortcut_edit.keySequence().toString(),
             "show_deck_list_flag": self.show_flag_cb.isChecked(),
             "show_victory_popup": self.show_victory_popup_cb.isChecked(),
+            "show_support_in_victory_popup": self.show_support_in_victory_popup_cb.isChecked(),
             "show_defeat_popup": self.show_defeat_popup_cb.isChecked(),
             "decor_enabled": self.decor_enabled_cb.isChecked(),
             "decor_type": "emoji" if self.decor_type_combo.currentText() == "Emoji" else "image",

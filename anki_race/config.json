@@ -37,5 +37,6 @@
     "show_deck_list_flag": true,
     "show_defeat_popup": true,
     "show_overview_button": false,
-    "show_victory_popup": true
+    "show_victory_popup": true,
+    "show_support_in_victory_popup": true
 }
