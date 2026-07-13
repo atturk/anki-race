@@ -87,7 +87,7 @@ class RaceConfigDialog(QDialog):
         self.tab_info = QWidget()
         
         self.tabs.addTab(self.tab_general, "General")
-        self.tabs.addTab(self.tab_graphics, "Graphics")
+        self.tabs.addTab(self.tab_graphics, "Appearance")
         self.tabs.addTab(self.tab_info, "Info")
         
         # Setup individual tabs content
