@@ -2,7 +2,7 @@
 
 Anki Race is a gamification add-on for Anki that turns your reviews into an exciting arcade race. Beat the CPU by finishing your reviews before time runs out, or escape a pursuer in Escape Mode!
 
-![Anki Race Demonstration](https://raw.githubusercontent.com/username/anki-race/main/ankiweb-assets/Anki_Race_1.gif)
+![Anki Race Demonstration](https://github.com/atturk/anki-race/blob/main/ankiweb-assets/Anki_Race_1.gif?raw=true)
 
 ## Features
 
