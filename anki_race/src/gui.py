@@ -560,13 +560,16 @@ class RaceSetupDialog(QDialog):
         from .config import race_config
         default_mode = race_config.get("default_mode", "normale")
         
-        self.btn_normal = QRadioButton("Normal Mode")
+        # Mode Radio Buttons (Horizontal Layout)
+        mode_layout = QHBoxLayout()
+        self.btn_normal = QRadioButton("Normal")
         self.btn_normal.setToolTip("The CPU advances at a constant speed. Finish the deck before being beaten.")
-        layout.addWidget(self.btn_normal)
+        mode_layout.addWidget(self.btn_normal)
         
-        self.btn_escape = QRadioButton("Escape Mode")
+        self.btn_escape = QRadioButton("Escape")
         self.btn_escape.setToolTip("The CPU chases you. Escape by completing the whole deck before being caught!")
-        layout.addWidget(self.btn_escape)
+        mode_layout.addWidget(self.btn_escape)
+        layout.addLayout(mode_layout)
         
         if default_mode == "fuga":
             self.btn_escape.setChecked(True)
