@@ -1,4 +1,4 @@
-[!showcase gif](https://i.postimg.cc/vTQXw87Q/showcase.gif)
+<img width="1280" height="439" alt="image" src="https://github.com/user-attachments/assets/0feb65fa-a609-407e-8bb7-e9198702ef92" />
 
 ## 🏁 Race Through Your Reviews!
 
