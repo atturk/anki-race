@@ -1,4 +1,6 @@
-<img width="1280" height="439" alt="image" src="https://github.com/user-attachments/assets/0feb65fa-a609-407e-8bb7-e9198702ef92" />
+
+<img src="https://i.postimg.cc/rmhRz8X5/showcase.gif" alt="Anki Race How to Play" width="50%" />
+
 
 ## 🏁 Race Through Your Reviews!
 
