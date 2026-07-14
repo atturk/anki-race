@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://i.postimg.cc/vTQXw87Q/showcase.gif" alt="showcase" width="auto" />
-</p>
+[!showcase gif](https://i.postimg.cc/vTQXw87Q/showcase.gif)
 
 ## 🏁 Race Through Your Reviews!
 
