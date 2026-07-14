@@ -1,22 +1,63 @@
-# Anki Race
+<p align="center">
+  <img src="https://i.postimg.cc/vTQXw87Q/showcase.gif" alt="showcase" width="auto" />
+</p>
 
-Anki Race is a gamification add-on for Anki that turns your reviews into an exciting arcade race. Beat the CPU by finishing your reviews before time runs out, or escape a pursuer in Escape Mode!
+## 🏁 Race Through Your Reviews!
 
-![Anki Race Demonstration](https://github.com/atturk/anki-race/blob/main/ankiweb-assets/Anki_Race_1.gif?raw=true)
+Reviews are taking too long? Anki Race keeps your mind moving at top speed!
 
-## Features
+---
 
-- **Standard Race Mode**: Race against the CPU. The CPU moves at a constant speed calculated to reach the finish line in your chosen target duration. Complete your reviews before it beats you!
-- **Escape (Pursuit) Mode**: A chase sequence where you start with a distance advantage, and the CPU pursues you. Complete the deck before you are caught!
-- **Nitro Boost**: Earn speed streaks! Reaching a streak of Good/Easy answers activates a flashing nitrous fire effect behind your car.
-- **Customizable Assets**: Use emojis or load your own custom image files for the player vehicle, CPU vehicle, road strip, and road decorations.
-- **Dynamic Road Scrolling & Infinite Loop Decorations**: Enable custom scenery scrolling along the road to make the gamified review bar feel alive.
-- **Clean UI & Statistics**: Check your average speed per card and total duration on custom post-race victory/defeat modals.
-- **Full Dark/Night Mode Support**: Automatically shifts text styles to high contrast depending on your active Anki theme.
+### 🎮 Game Modes
 
-## Installation
+Anki Race features two playstyles:
 
-1. Copy the addon files to your Anki addons directory or search for Anki Race on AnkiWeb.
-2. Restart Anki.
+#### 1. Normal Mode (Standard Race)
+Race against a CPU opponent that moves at a constant speed calculated to cross the finish line in your chosen target duration (e.g., 5 minutes). Complete your card reviews before the CPU beats you to win!
 
+#### 2. Escape Mode (Pursuit Chase)
+You start with a head start (distance advantage), and a CPU pursuer chases you down. Complete all due reviews in your deck before the pursuer catches up to you!
 
+---
+
+### ⚙️ Extreme Customization
+
+<p align="center">
+  <img src="https://github.com/atturk/anki-race/blob/main/ankiweb-assets/general.png?raw=true" alt="Customization general" width="50%" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/atturk/anki-race/blob/main/ankiweb-assets/appearance.png?raw=true" alt="Customization graphics" width="50%" />
+</p>
+
+Tailor the arcade bar to match your aesthetic:
+
+*   **Overall Layout:** Change the height of the race bar shown at the top of your review screen.
+*   **Vehicles:** Use emojis or upload custom image files (including **animated GIFs**) for both your car and the CPU car, and adjust their sizes and vertical positions.
+*   **Background Styling:** Choose between a solid background color or a texture image that tiles and scrolls infinitely at your chosen speed.
+*   **Advanced Road Track Layout:** Place custom road tile images or emojis. Choose between a single fixed element or a looping pattern with custom spacing, and toggle scrolling speed to create a dynamically moving animated road!
+*   **Nitro Boost:** Activate a flashing nitrous flame effect behind your car when you maintain a consecutive streak of correct answers (Good/Easy), which remains active as long as you keep the streak alive.
+
+---
+
+### 🚀 How to Play
+
+<p align="center">
+  <img src="https://i.postimg.cc/rmhRz8X5/howtoplay.gif" alt="Anki Race How to Play" width="50%" />
+</p>
+
+1.  Select any deck with at least one card due.
+2.  Go to **Tools -> Anki Race -> Start Race**.
+3.  Every card you rate (Again, Hard, Good, or Easy) moves your car forward along the track.
+4.  *(Optional)* Enable the deck overview button or configure a keyboard shortcut in the settings for one-click access.
+
+---
+
+### ☕ Support the Developer
+
+If Anki Race makes your daily reviews more enjoyable, consider supporting future development:
+
+*   **Buy Me A Coffee:** [buymeacoffee.com/hhrhrdbr6ys](https://buymeacoffee.com/hhrhrdbr6ys)
+*   **Tipeee:** [it.tipeee.com/ankilius](https://it.tipeee.com/ankilius/)
+*   **Ko-fi:** [ko-fi.com/ankilius](https://ko-fi.com/ankilius)
+*   **AnkiWeb:** Leave a 👍 thumbs up on AnkiWeb!
