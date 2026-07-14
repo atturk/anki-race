@@ -1,4 +1,4 @@
-<img width="1400" height="480" alt="showcase" src="https://github.com/user-attachments/assets/bd319db9-717a-4bd5-b07c-cf614f1679b3" />
+<img width="1400" height="480" alt="showcase" src="https://i.postimg.cc/vTQXw87Q/showcase.gif" />
 
 
 ## 🏁 Race Through Your Reviews!
