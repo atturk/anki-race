@@ -52,6 +52,12 @@ Tailor the arcade bar to match your aesthetic:
 
 ---
 
+### To-Do List
+- [ ] Allow for duration > 2h
+- [ ] Chill mode (no opponent, optional collectable item every x cards)
+- [ ] Personal record system & Ghost car
+- [ ] Auto calculate average time per card in current deck and show suggested duration based on that
+
 ### ☕ Support the Developer
 
 If Anki Race makes your daily reviews more enjoyable, consider supporting future development:
